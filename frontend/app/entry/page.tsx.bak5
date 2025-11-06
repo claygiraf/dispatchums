@@ -1,0 +1,659 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+// Protocol data
+const protocols = [
+  { id: '1', name: 'Abdominal Pain/Problems' },
+  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },
+  { id: '3', name: 'Animal Bites/Attacks' },
+  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },
+  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },
+  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },
+  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },
+  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },
+  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },
+  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' },
+  { id: '11', name: 'Choking' },
+  { id: '12', name: 'Convulsions/Seizures' },
+  { id: '13', name: 'Diabetic Problems' },
+  { id: '14', name: 'Drowning/Near Drowning/Diving/SCUBA Accident' },
+  { id: '15', name: 'Electrocution/Lightning' },
+  { id: '16', name: 'Eye Problems/Injuries' },
+  { id: '17', name: 'Falls' },
+  { id: '18', name: 'Headache' },
+  { id: '19', name: 'Heart Problems/A.I.C.D.' },
+  { id: '20', name: 'Heat/Cold Exposure' },
+  { id: '21', name: 'Hemorrhage/Lacerations' },
+  { id: '22', name: 'Inaccessible Incident/Other Entrapments (Non-Traffic)' },
+  { id: '23', name: 'Overdose/Poisoning (Ingestion)' },
+  { id: '24', name: 'Pregnancy/Childbirth/Miscarriage' },
+  { id: '25', name: 'Psychiatric/Abnormal Behavior/Suicide Attempt' },
+  { id: '26', name: 'Sick Person (Specific Diagnosis)' },
+  { id: '27', name: 'Stab/Gunshot/Penetrating Trauma' },
+  { id: '28', name: 'Stroke (CVA)/Transient Ischemic Attack (TIA)' },
+  { id: '29', name: 'Traffic/Transportation Incidents' },
+  { id: '30', name: 'Traumatic Injuries (Specific)' },
+  { id: '31', name: 'Unconscious/Fainting (Near)' },
+  { id: '32', name: 'Unknown Problem (Person Down)' },
+  { id: '33', name: 'Transfer/Interfacility/Palliative Care' },
+  { id: '34', name: 'ACN (Automatic Crash Notification)' },
+  { id: '35', name: 'Health Care Professional Admission (UK only)' },
+  { id: '36', name: 'Pandemic/Epidemic/Outbreak (Surveillance or Triage)' }
+];
+
+export default function EntryPage() {
+  // Navigation and Menu States
+  const [activeTab, setActiveTab] = useState('Entry');
+  const [activeSubTab, setActiveSubTab] = useState('Case Entry');
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showViewMenu, setShowViewMenu] = useState(false);
+  const [showSpecLogMenu, setShowSpecLogMenu] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showTabsMenu, setShowTabsMenu] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [hintsEnabled, setHintsEnabled] = useState(true);
+  const [sortChiefComplaints, setSortChiefComplaints] = useState(false);
+  const [filteredProtocols, setFilteredProtocols] = useState(protocols);
+
+  // Timer and Progress State
+  const [elapsed, setElapsed] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Format elapsed time as mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Auto-start timer on component mount
+  useEffect(() => {
+    setIsTimerRunning(true);
+  }, []);
+
+  // Timer Effect
+  useEffect(() => {
+    if (!isTimerRunning) return;
+
+    const timer = setInterval(() => {
+      setElapsed(prev => {
+        const newElapsed = prev + 1;
+        setProgress(Math.min((newElapsed / 60) * 100, 100));
+        return newElapsed;
+      });
+    }, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isTimerRunning]);
+
+  // Profile and Language settings
+  const [username, setUsername] = useState('SUPERVISOR');
+  const [fullName, setFullName] = useState('John Supervisor');
+  const [caseNumber, setCaseNumber] = useState('2000005541');
+  const [selectedOperatorLanguage, setSelectedOperatorLanguage] = useState('ENGLISH');
+  const [selectedCallerLanguage, setSelectedCallerLanguage] = useState('ENGLISH');
+  const [tempOperatorLanguage, setTempOperatorLanguage] = useState('ENGLISH');
+  const [tempCallerLanguage, setTempCallerLanguage] = useState('ENGLISH');
+
+  // Form Data State
+  const [formData, setFormData] = useState({
+    location: '2585 E 16th St',
+    phoneNumber: '555-5555',
+    problem: 'Having a baby, heads out',
+    withPatient: 'Yes',
+    numHurt: '1',
+    age: '',
+    gender: '',
+    conscious: '',
+    breathing: '',
+    chiefComplaint: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    setElapsed(0);
+    setProgress(0);
+    setIsTimerRunning(true);
+  };
+
+  // Render different content based on active tab
+  const renderTabContent = () => {
+    if (activeTab === 'Entry' && activeSubTab === 'Additional Information') {
+      return (
+        <div className="p-4">
+          {/* Empty Additional Information tab */}
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'Entry':
+        return (
+          <div className="space-y-1">
+            <div className="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-1 items-center">
+              <div className="text-left text-black">The location is:</div>
+              <div className="flex gap-2 items-start w-full">
+                <div className="relative flex-1">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={formData.location || ''}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          setFormData(prev => ({ ...prev, location: newValue }));
+                          setIsLocationValidated(false);
+                          setShowMap(false);
+                        }}
+                        name="location"
+                        className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full pr-8"
+                        placeholder="Type to search for an address..."
+                      />
+                      {isLocationValidated && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={validateLocation}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition h-7 flex items-center gap-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                      Validate
+                    </button>
+                  </div>
+                  {showMap && (
+                    <div className="absolute left-full ml-4 top-0" style={{ width: '300px', height: '200px' }}>
+                      <div className="bg-white p-2 rounded shadow-lg relative">
+                        <iframe
+                          src={mapUrl}
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                        <button
+                          onClick={() => setShowMap(false)}
+                          className="absolute top-1 right-1 text-gray-500 hover:text-gray-700"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-left text-black">The phone number is:</div>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                name="phoneNumber"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-left text-black">The problem is:</div>
+              <input
+                type="text"
+                value={formData.problem}
+                onChange={handleChange}
+                name="problem"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-left text-black">With the patient now:</div>
+              <select
+                value={formData.withPatient}
+                onChange={handleChange}
+                name="withPatient"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-left text-black">The number of hurt (sick) is:</div>
+              <input
+                type="text"
+                value={formData.numHurt}
+                onChange={handleChange}
+                name="numHurt"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-left text-black">How old is the patient?</div>
+              <input
+                type="text"
+                value={formData.age}
+                onChange={handleChange}
+                name="age"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-left text-black">The patient's gender is:</div>
+              <select
+                value={formData.gender}
+                onChange={handleChange}
+                name="gender"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+
+              <div className="text-left text-black">Is he/she awake (conscious)?</div>
+              <select
+                value={formData.conscious}
+                onChange={handleChange}
+                name="conscious"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-left text-black">Is he/she breathing?</div>
+              <select
+                value={formData.breathing}
+                onChange={handleChange}
+                name="breathing"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-left text-black">The Chief Complaint is:</div>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={formData.chiefComplaint}
+                  onChange={(e) => {
+                    handleChange(e);
+                    // Filter protocols based on input
+                    const searchTerm = e.target.value.toLowerCase();
+                    if (searchTerm.length > 0) {
+                      const filtered = protocols.filter(protocol =>
+                        protocol.name.toLowerCase().includes(searchTerm) ||
+                        protocol.id.includes(searchTerm)
+                      );
+                      setFilteredProtocols(filtered);
+                    } else {
+                      setFilteredProtocols([]); // Clear the filtered protocols when input is empty
+                    }
+                  }}
+                  name="chiefComplaint"
+                  className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="Type protocol number or name..."
+                />
+                {filteredProtocols.length > 0 && formData.chiefComplaint && (
+                  <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded shadow-lg">
+                    {filteredProtocols.map(protocol => (
+                      <div
+                        key={protocol.id}
+                        className="px-3 py-2 cursor-pointer hover:bg-blue-50 text-black"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            chiefComplaint: `${protocol.id} - ${protocol.name}`
+                          }));
+                          setFilteredProtocols([]);
+                          setElapsed(0);
+                          setProgress(0);
+                          setIsTimerRunning(true);
+                        }}
+                      >
+                        <span className="font-semibold text-blue-600">{protocol.id}</span> - {protocol.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Confirm & Continue Button */}
+          {activeTab === 'Entry' && activeSubTab === 'Case Entry' && (
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => {
+                  // Add any confirmation logic here
+                  console.log('Confirming entry...');
+                  setActiveSubTab('Additional Information');
+                }}
+                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-2"
+              >
+                <span>Confirm & Continue</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+        );
+      case 'KQ':
+        return <div className="p-4 text-center text-gray-500">Key Questions Content</div>;
+      case 'PDI/CEI':
+        return <div className="p-4 text-center text-gray-500">Post Dispatch Instructions Content</div>;
+      case 'DLS':
+        return <div className="p-4 text-center text-gray-500">Dispatch Life Support Content</div>;
+      case 'Summary':
+        return <div className="p-4 text-center text-gray-500">Case Summary Content</div>;
+      default:
+        return null;
+    }
+  };
+
+  // Existing functions remain the same...
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Top Navigation Bar */}
+      <div className="bg-[#27272A] text-gray-300 flex flex-col">
+        {/* Navigation Menu */}
+        <nav className="px-4 py-2 flex items-center">
+          <div className="flex space-x-4">
+            {/* File Menu */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowFileMenu(!showFileMenu);
+                  setShowViewMenu(false);
+                  setShowSpecLogMenu(false);
+                  setShowOptionsMenu(false);
+                  setShowLanguageMenu(false);
+                  setShowTabsMenu(false);
+                  setShowHelpMenu(false);
+                }}
+                className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded"
+              >
+                File
+              </button>
+              {showFileMenu && (
+                <div className="absolute top-full left-0 mt-1 bg-[#27272A] border border-gray-700 rounded shadow-lg z-50 min-w-[200px]">
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">New case</button>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Open case...</button>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Close case</button>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Caller hangup</button>
+                  <div className="border-t border-gray-700 my-1"></div>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Hold case</button>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Pick-up case...</button>
+                  <div className="border-t border-gray-700 my-1"></div>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Change case number...</button>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Print case...</button>
+                  <div className="border-t border-gray-700 my-1"></div>
+                  <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Exit</button>
+                </div>
+              )}
+            </div>
+
+            {/* View Menu */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowViewMenu(!showViewMenu);
+                  setShowFileMenu(false);
+                  setShowSpecLogMenu(false);
+                  setShowOptionsMenu(false);
+                  setShowLanguageMenu(false);
+                  setShowTabsMenu(false);
+                  setShowHelpMenu(false);
+                }}
+                className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded"
+              >
+                View
+              </button>
+              {showViewMenu && (
+                <div className="absolute top-full left-0 mt-1 bg-[#27272A] border border-gray-700 rounded shadow-lg z-50 min-w-[200px]">
+                  <button onClick={() => setHintsEnabled(!hintsEnabled)} className="w-full text-left px-4 py-2 hover:bg-gray-700">
+                    {hintsEnabled ? '✓ ' : ''}Hints
+                  </button>
+                  <button onClick={() => setSortChiefComplaints(!sortChiefComplaints)} className="w-full text-left px-4 py-2 hover:bg-gray-700">
+                    {sortChiefComplaints ? '✓ ' : ''}Sort Chief Complaints
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Other Menu Items */}
+            <button onClick={() => setShowSpecLogMenu(!showSpecLogMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+              Spec Log
+            </button>
+            <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+              Options
+            </button>
+            <button onClick={() => setShowLanguageMenu(!showLanguageMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+              Go to language
+            </button>
+            <button onClick={() => setShowTabsMenu(!showTabsMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+              Tabs
+            </button>
+            <button onClick={() => setShowHelpMenu(!showHelpMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+              Help
+            </button>
+          </div>
+        </nav>
+
+        {/* Timer and Progress Bar */}
+        <div className="bg-[#1a1a1a] p-3 border-b border-gray-700">
+          <div className="text-white font-mono text-lg text-center">{formatTime(elapsed)}</div>
+          <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-[#1D9BF0] animate-loading-wave" style={{ width: `${progress}%` }}></div>
+          </div>
+        </div>
+      </div>
+              {/* File Menu */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setShowFileMenu(!showFileMenu);
+                    setShowViewMenu(false);
+                    setShowSpecLogMenu(false);
+                    setShowOptionsMenu(false);
+                    setShowLanguageMenu(false);
+                    setShowTabsMenu(false);
+                    setShowHelpMenu(false);
+                  }}
+                  className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded"
+                >
+                  File
+                </button>
+                {showFileMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-[#27272A] border border-gray-700 rounded shadow-lg z-50 min-w-[200px]">
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">New case</button>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Open case...</button>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Close case</button>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Caller hangup</button>
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Hold case</button>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Pick-up case...</button>
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Change case number...</button>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Print case...</button>
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <button onClick={() => setShowFileMenu(false)} className="w-full text-left px-4 py-2 hover:bg-gray-700">Exit</button>
+                  </div>
+                )}
+              </div>
+
+              {/* View Menu */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setShowViewMenu(!showViewMenu);
+                    setShowFileMenu(false);
+                    setShowSpecLogMenu(false);
+                    setShowOptionsMenu(false);
+                    setShowLanguageMenu(false);
+                    setShowTabsMenu(false);
+                    setShowHelpMenu(false);
+                  }}
+                  className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded"
+                >
+                  View
+                </button>
+                {showViewMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-[#27272A] border border-gray-700 rounded shadow-lg z-50 min-w-[200px]">
+                    <button onClick={() => setHintsEnabled(!hintsEnabled)} className="w-full text-left px-4 py-2 hover:bg-gray-700">
+                      {hintsEnabled ? '✓ ' : ''}Hints
+                    </button>
+                    <button onClick={() => setSortChiefComplaints(!sortChiefComplaints)} className="w-full text-left px-4 py-2 hover:bg-gray-700">
+                      {sortChiefComplaints ? '✓ ' : ''}Sort Chief Complaints
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Spec Log Menu */}
+              <button onClick={() => setShowSpecLogMenu(!showSpecLogMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+                Spec Log
+              </button>
+
+              {/* Options Menu */}
+              <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+                Options
+              </button>
+
+              {/* Go to language Menu */}
+              <button onClick={() => setShowLanguageMenu(!showLanguageMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+                Go to language
+              </button>
+
+              {/* Tabs Menu */}
+              <button onClick={() => setShowTabsMenu(!showTabsMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+                Tabs
+              </button>
+
+              {/* Help Menu */}
+              <button onClick={() => setShowHelpMenu(!showHelpMenu)} className="px-3 py-2 text-gray-300 hover:bg-gray-700 rounded">
+                Help
+              </button>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      {/* Timer Bar */}
+        <div className="bg-[#1a1a1a] p-3 border-t border-b border-gray-700">
+          <div className="text-white font-mono text-lg text-center">{formatTime(elapsed)}</div>
+          <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-[#1D9BF0] animate-loading-wave" style={{ width: `${progress}%` }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 bg-[#D3D3D3] flex flex-col">
+        {/* Main Navigation Tabs */}
+        <div className="bg-[#C0C0C0]">
+          <div className="flex w-full border-b border-gray-500">
+            {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 ${
+                  tab === activeTab 
+                    ? 'bg-white text-black font-medium' 
+                    : 'text-black hover:bg-gray-300 transition'
+                } border-r border-gray-500`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sub Tabs */}
+        <div className="flex">
+          {['Case Entry', 'Additional Information'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveSubTab(tab)}
+              className={`py-2 px-4 text-black ${
+                tab === activeSubTab 
+                  ? 'bg-[#C0C0C0] font-medium' 
+                  : 'hover:bg-gray-300 transition'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Form Content */}
+        <div className="flex-1 p-4">
+          {renderTabContent()}
+        </div>
+
+        {/* Footer Information Panel */}
+        <div className="bg-[#27272A] border-t border-[#27272A] flex">
+          {/* Left Column - User Info & Case Number */}
+          <div className="w-1/4 border-r border-gray-600 p-3">
+            <div className="space-y-2">
+              <div className="text-white">
+                <div className="text-base font-semibold">{username}</div>
+                <div className="text-base text-gray-400">{fullName}</div>
+              </div>
+              <div className="text-white">
+                <div className="text-base font-semibold text-gray-500">
+                  {caseNumber ? caseNumber : 'No case number'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle Column - O & C Settings */}
+          <div className="w-1/4 border-r border-gray-600 p-3">
+            <div className="space-y-1">
+              <div className="text-white">
+                <div className="text-base text-gray-400">O: {selectedOperatorLanguage}</div>
+                <div className="text-base text-gray-400">C: {selectedCallerLanguage}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Case Information */}
+          <div className="w-1/2 p-3">
+            <div className="text-white">
+              {caseNumber ? (
+                <div className="space-y-1">
+                  <div className="text-base text-gray-400">Case Information</div>
+                  <div className="text-base font-semibold">Case #{caseNumber}</div>
+                </div>
+              ) : (
+                <div className="text-base text-gray-500">No active case</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

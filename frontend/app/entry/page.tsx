@@ -1,332 +1,276 @@
-"use client"
+'use client';
 
-import React, { useState } from 'react';
-import { ChevronRight, Clock, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import EntryNavigation from '@/components//shared/EntryNavigation';
 
-export default function AllCallersInterrogation() {
+// Protocol data
+const protocols = [
+  { id: '1', name: 'Abdominal Pain/Problems' },
+  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },
+  { id: '3', name: 'Animal Bites/Attacks' },
+  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },
+  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },
+  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },
+  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },
+  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },
+  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },
+  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' },
+  // Add more protocols as needed...
+];
+
+export default function EntryPage() {
+  // Timer and Progress State
+  const [elapsed, setElapsed] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  
+  // Case data
+  const [caseNumber, setCaseNumber] = useState('2000005541');
+  
+  // Format elapsed time as mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Load Google Maps Script
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBk7nQUmLoluH0eVdT3FnBeNreGcqqg9Uk&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    };
+
+    if (!(window as any).google) {
+      loadGoogleMapsScript();
+    }
+  }, []);
+
+  // Auto-start timer on component mount
+  useEffect(() => {
+    setIsTimerRunning(true);
+  }, []);
+
+  // Timer Effect
+  useEffect(() => {
+    if (!isTimerRunning) return;
+
+    const timer = setInterval(() => {
+      setElapsed(prev => {
+        const newElapsed = prev + 1;
+        setProgress(Math.min((newElapsed / 60) * 100, 100));
+        return newElapsed;
+      });
+    }, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isTimerRunning]);
+
   const [formData, setFormData] = useState({
-    location: '',
-    phoneNumber: '',
-    emergency: '',
-    numHurt: '',
+    location: '2585 E 16th St',
+    phoneNumber: '555-5555',
+    problem: 'Having a baby, heads out',
+    withPatient: 'Yes',
+    numHurt: '1',
     age: '',
+    gender: '',
     conscious: '',
     breathing: '',
-    gender: '',
-    callerName: ''
+    chiefComplaint: ''
   });
+  
+  const [filteredProtocols, setFilteredProtocols] = useState(protocols);
+  const [isAddressValidated, setIsAddressValidated] = useState(false);
+  const [validationLoading, setValidationLoading] = useState(false);
+  const [mapPosition, setMapPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const mapRef = useRef<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
-  const handleInputChange = (field: string, value: string) => {
-  setFormData(prev => ({ ...prev, [field]: value }));
-};
+  const validateAddress = async () => {
+    setValidationLoading(true);
+    setIsAddressValidated(false);
+    try {
+      const geocoder = new (window as any).google.maps.Geocoder();
+      
+      geocoder.geocode(
+        { address: formData.location },
+        (results: any, status: any) => {
+          if (status === 'OK') {
+            const location = results[0].geometry.location;
+            const formattedAddress = results[0].formatted_address;
+            setMapPosition({
+              lat: location.lat(),
+              lng: location.lng()
+            });
+            setSelectedLocation(formattedAddress);
+            setIsAddressValidated(true);
+            setFormData(prev => ({
+              ...prev,
+              location: formattedAddress
+            }));
+          } else {
+            setMapPosition(null);
+            setSelectedLocation(null);
+            setIsAddressValidated(false);
+          }
+          setValidationLoading(false);
+        }
+      );
+    } catch (error) {
+      console.error('Validation error:', error);
+      setMapPosition(null);
+      setSelectedLocation(null);
+      setIsAddressValidated(false);
+      setValidationLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    setElapsed(0);
+    setProgress(0);
+    setIsTimerRunning(true);
+  };
+
+  const handleLogout = () => {
+    window.location.href = '/';
+  };
+
+  const handleCloseCase = () => {
+    console.log('Closing case...');
+  };
+
+  const handleChangeCaseNumber = () => {
+    setCaseNumber(window.prompt('Enter new case number:') || caseNumber);
+  };
+
+  const handlePrintCase = () => {
+    window.print();
+  };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
-      {/* Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-[#27272A]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <h1 className="text-3xl font-serif text-white tracking-wide hover:text-[#1D9BF0] transition cursor-pointer">
-              DISPATCHUMS
-            </h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-[#9CA3AF]">
-                <Clock size={16} />
-                <span className="text-sm font-mono">00:20</span>
+    <EntryNavigation
+      username="SUPERVISOR"
+      fullName="John Supervisor"
+      caseNumber={caseNumber}
+      onLogout={handleLogout}
+      onCloseCase={handleCloseCase}
+      onChangeCaseNumber={handleChangeCaseNumber}
+      onPrintCase={handlePrintCase}
+    >
+      {/* Timer and Loading Bar */}
+      <div className="bg-[#1a1a1a] border-t border-b border-gray-700">
+        <div className="flex items-center justify-between px-2 py-3">
+          <div className="text-white font-mono text-lg pl-1">{formatTime(elapsed)}</div>
+          <div className="flex-1 flex justify-center px-4">
+            <div className="w-1/2 max-w-lg h-3 bg-gray-700 rounded-full overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-full">
+                <div className="h-full bg-[#1D9BF0] animate-loading-wave"></div>
               </div>
-              <div className="h-6 w-px bg-[#27272A]" />
-              <div className="text-[#9CA3AF] text-sm">CASE-988030</div>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
+
+      {/* Sub Tabs */}
+      <div className="flex">
+        {['Case Entry', 'Additional Information'].map((tab) => (
+          <button
+            key={tab}
+            className="py-2 px-4 text-black bg-[#C0C0C0] hover:bg-gray-300 transition"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
       {/* Main Content */}
-      <main className="pt-32 pb-16 px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto space-y-6">
-          
-          {/* Header */}
-          <div className="bg-[#27272A] border border-[#27272A] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Clock className="text-[#1D9BF0]" size={24} />
-              <h2 className="text-2xl font-semibold text-white">ALL CALLERS INTERROGATION</h2>
+      <div className="max-w-2xl mx-auto py-2 px-6">
+        <div className="space-y-1">
+          <div className="grid grid-cols-[200px,1fr] gap-x-3 gap-y-1 items-start">
+            <div className="text-left text-black">The location is:</div>
+            <div className="flex gap-2 items-start">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => {
+                    handleChange(e);
+                    setIsAddressValidated(false);
+                    setMapPosition(null);
+                    setSelectedLocation(null);
+                  }}
+                  name="location"
+                  className={`border px-1 py-0.5 h-7 bg-white text-black w-full ${
+                    isAddressValidated ? 'border-green-500' : 
+                    isAddressValidated === false && mapPosition === null ? 'border-red-500' : 
+                    'border-gray-400'
+                  }`}
+                />
+                {isAddressValidated && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <span className="text-xs text-green-600">Valid</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={validateAddress}
+                disabled={validationLoading || !formData.location}
+                className={`bg-[#C0C0C0] border border-gray-600 px-3 text-black hover:bg-gray-300 transition h-7 flex items-center justify-center gap-1 ${validationLoading || !formData.location ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {validationLoading ? 'Validating...' : 'Validate'}
+              </button>
             </div>
-            <p className="text-[#9CA3AF]">CASE-988030 | Awaiting Protocol Selection</p>
+
+            <div className="text-left text-black">The phone number is:</div>
+            <input
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              name="phoneNumber"
+              className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+            />
+
+            <div className="text-left text-black">The problem is:</div>
+            <input
+              type="text"
+              value={formData.problem}
+              onChange={handleChange}
+              name="problem"
+              className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+            />
+
+            {/* Add more form fields as needed... */}
           </div>
-
-          {/* Key Questions Section */}
-          <div className="bg-[#27272A] border border-[#27272A] rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <AlertCircle className="text-[#10B981]" size={20} />
-              Key Questions
-            </h3>
-
-            <div className="space-y-6">
-              
-              {/* Question 1 - Location */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">1.</span>
-                  <div className="flex-1">
-                    <span>Where is your emergency?</span>
-                    <span className="text-[#9CA3AF] text-sm ml-2">(address or location)</span>
-                  </div>
-                </label>
-                <div className="ml-6">
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    placeholder="Confirm location"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                </div>
-              </div>
-
-              {/* Question 2 - Phone Number */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">2.</span>
-                  <span>What is the phone number you are calling from?</span>
-                </label>
-                <div className="ml-6">
-                  <input
-                    type="tel"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    placeholder="Confirm phone number"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                </div>
-              </div>
-
-              {/* Question 3 - Emergency Type */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">3.</span>
-                  <span>What is the emergency?</span>
-                </label>
-                <div className="ml-6 space-y-2">
-                  <input
-                    type="text"
-                    value={formData.emergency}
-                    onChange={(e) => handleInputChange('emergency', e.target.value)}
-                    placeholder="Describe the emergency"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                  <p className="text-[#9CA3AF] text-sm italic">If MVC, jump to the T10: MVC Card</p>
-                </div>
-              </div>
-
-              {/* Question 4 - Number Hurt */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">4.</span>
-                  <div className="flex-1">
-                    <span>How many people are hurt?</span>
-                    <span className="text-[#9CA3AF] text-sm ml-2">(if not obvious)</span>
-                  </div>
-                </label>
-                <div className="ml-6">
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.numHurt}
-                    onChange={(e) => handleInputChange('numHurt', e.target.value)}
-                    placeholder="1"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                </div>
-              </div>
-
-              {/* Question 5 - Age */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">5.</span>
-                  <span>How old is the person?</span>
-                </label>
-                <div className="ml-6">
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.age}
-                    onChange={(e) => handleInputChange('age', e.target.value)}
-                    placeholder="55"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                </div>
-              </div>
-
-              {/* Question 6 - Conscious */}
-              <div className="space-y-3">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">6.</span>
-                  <span>Is the person conscious?</span>
-                </label>
-                <div className="ml-6 space-y-3">
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => handleInputChange('conscious', 'yes')}
-                      className={`flex-1 px-4 py-3 rounded-lg border transition font-medium ${
-                        formData.conscious === 'yes'
-                          ? 'bg-[#10B981] border-[#10B981] text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => handleInputChange('conscious', 'no')}
-                      className={`flex-1 px-4 py-3 rounded-lg border transition font-medium ${
-                        formData.conscious === 'no'
-                          ? 'bg-red-600 border-red-600 text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
-                  {formData.conscious === 'no' && (
-                    <div className="p-4 bg-red-600/10 border border-red-600/30 rounded-lg">
-                      <p className="text-red-400 text-sm font-medium">
-                        If No, Send a Code Red Response. Advise Caller help has been dispatched.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Question 7 - Breathing */}
-              <div className="space-y-3">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">7.</span>
-                  <span>Is the person breathing?</span>
-                </label>
-                <div className="ml-6 space-y-3">
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      onClick={() => handleInputChange('breathing', 'yes')}
-                      className={`px-4 py-3 rounded-lg border transition text-sm font-medium ${
-                        formData.breathing === 'yes'
-                          ? 'bg-[#10B981] border-[#10B981] text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => handleInputChange('breathing', 'uncertain')}
-                      className={`px-4 py-3 rounded-lg border transition text-sm font-medium ${
-                        formData.breathing === 'uncertain'
-                          ? 'bg-yellow-600 border-yellow-600 text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      Uncertain
-                    </button>
-                    <button
-                      onClick={() => handleInputChange('breathing', 'no')}
-                      className={`px-4 py-3 rounded-lg border transition text-sm font-medium ${
-                        formData.breathing === 'no'
-                          ? 'bg-red-600 border-red-600 text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
-                  
-                  {formData.breathing === 'yes' && (
-                    <div className="p-4 bg-[#10B981]/10 border border-[#10B981]/30 rounded-lg">
-                      <p className="text-[#10B981] text-sm font-medium">
-                        If Yes, Go to the C6: Unconscious/Fainting Card
-                      </p>
-                    </div>
-                  )}
-                  
-                  {formData.breathing === 'uncertain' && (
-                    <div className="p-4 bg-yellow-600/10 border border-yellow-600/30 rounded-lg">
-                      <p className="text-yellow-400 text-sm font-medium">
-                        If Uncertain, tell caller to Go and See if the chest is rising, then come back to the phone
-                      </p>
-                    </div>
-                  )}
-                  
-                  {formData.breathing === 'no' && (
-                    <div className="p-4 bg-red-600/10 border border-red-600/30 rounded-lg">
-                      <p className="text-red-400 text-sm font-medium">
-                        If No, go to the C1: Cardiac Arrest Card
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Question 8 - Gender */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">8.</span>
-                  <div className="flex-1">
-                    <span>Is the person male or female?</span>
-                    <span className="text-[#9CA3AF] text-sm ml-2">(if not obvious)</span>
-                  </div>
-                </label>
-                <div className="ml-6">
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => handleInputChange('gender', 'male')}
-                      className={`flex-1 px-4 py-3 rounded-lg border transition font-medium ${
-                        formData.gender === 'male'
-                          ? 'bg-[#1D9BF0] border-[#1D9BF0] text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      Male
-                    </button>
-                    <button
-                      onClick={() => handleInputChange('gender', 'female')}
-                      className={`flex-1 px-4 py-3 rounded-lg border transition font-medium ${
-                        formData.gender === 'female'
-                          ? 'bg-[#1D9BF0] border-[#1D9BF0] text-white'
-                          : 'bg-[#0A0A0A] border-[#27272A] text-white hover:border-[#1D9BF0]'
-                      }`}
-                    >
-                      Female
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Question 9 - Caller Name */}
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-white font-medium">
-                  <span className="text-[#1D9BF0] min-w-[24px]">9.</span>
-                  <span>What is your name?</span>
-                </label>
-                <div className="ml-6">
-                  <input
-                    type="text"
-                    value={formData.callerName}
-                    onChange={(e) => handleInputChange('callerName', e.target.value)}
-                    placeholder="Caller name"
-                    className="w-full bg-[#0A0A0A] border border-[#27272A] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#1D9BF0] transition placeholder:text-[#9CA3AF]"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex justify-end">
-            <button className="flex items-center gap-2 bg-[#1D9BF0] text-white px-6 py-3 rounded-lg hover:bg-[#1a8cd8] transition font-medium">
-              Next
-              <ChevronRight size={20} />
-            </button>
-          </div>
-
         </div>
-      </main>
-    </div>
+
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={() => {
+              console.log('Confirming entry...');
+            }}
+            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-2"
+          >
+            <span>Confirm & Continue</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </EntryNavigation>
   );
 }
