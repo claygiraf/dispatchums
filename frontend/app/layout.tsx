@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { NavigationWrapper } from '@/components/shared/NavigationWrapper';
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -26,7 +27,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} font-sans`}>{children}</body>
+      <head>
+        <script 
+          async
+          defer
+          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyBk7nQUmLoluH0eVdT3FnBeNreGcqqg9Uk&libraries=places`}
+        />
+      </head>
+      <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+        <NavigationWrapper>
+          {children}
+        </NavigationWrapper>
+      </body>
     </html>
   );
 }

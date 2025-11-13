@@ -1,0 +1,451 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import EntryNavigation from '@/components//shared/EntryNavigation';
+
+// Protocol data
+const protocols = [
+  { id: '1', name: 'Abdominal Pain/Problems' },
+  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },
+  { id: '3', name: 'Animal Bites/Attacks' },
+  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },
+  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },
+  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },
+  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },
+  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },
+  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },
+  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' },
+  // Add more protocols as needed...
+];
+
+export default function EntryPage() {
+  const [elapsed, setElapsed] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState('Entry');
+  const [activeSubTab, setActiveSubTab] = useState('Case Entry');
+  const [caseNumber, setCaseNumber] = useState('2000005541');
+  const [filteredProtocols, setFilteredProtocols] = useState<typeof protocols>([]);
+
+  const [formData, setFormData] = useState({
+    location: '2585 E 16th St',
+    phoneNumber: '555-5555',
+    problem: 'Having a baby, heads out',
+    withPatient: 'Yes',
+    numHurt: '1',
+    age: '',
+    gender: '',
+    conscious: '',
+    breathing: '',
+    chiefComplaint: ''
+  });
+
+  // Timer Effect
+  useEffect(() => {
+    setIsTimerRunning(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isTimerRunning) return;
+
+    const timer = setInterval(() => {
+      setElapsed(prev => {
+        const newElapsed = prev + 1;
+        setProgress(Math.min((newElapsed / 60) * 100, 100));
+        return newElapsed;
+      });
+    }, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isTimerRunning]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleLogout = () => {
+    window.location.href = '/';
+  };
+
+  const handleCloseCase = () => {
+    // Handle close case
+  };
+
+  const handleChangeCaseNumber = () => {
+    // Handle change case number
+  };
+
+  const handlePrintCase = () => {
+    window.print();
+  };
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top Menu Bar */}
+      <div className="bg-[#E8E8E8] border-b border-gray-300 h-8">
+        <div className="flex items-center h-full px-2">
+          <div className="flex space-x-4">
+            <button className="text-black hover:bg-gray-300 px-2 h-full">File</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">View</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Spec Log</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Options</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Go to language</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Tabs</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Help</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Timer Bar */}
+      <div className="bg-[#1a1a1a] border-b border-gray-700 h-10">
+        <div className="flex items-center justify-between h-full px-2">
+          <div className="text-white font-mono text-2xl font-bold">{formatTime(elapsed)}</div>
+          <div className="flex-1 flex justify-center px-8">
+            <div className="w-2/3 max-w-xl h-4 bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full bg-[#1D9BF0] transition-all duration-1000" 
+                   style={{width: `${progress}%`}}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation Tabs */}
+      <div className="bg-[#C0C0C0] border-b border-gray-400 h-10">
+        <div className="flex h-full">
+          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 h-full ${
+                tab === activeTab
+                  ? 'bg-white text-black font-medium'
+                  : 'text-black hover:bg-gray-300 transition'
+              } border-r border-gray-400`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sub Navigation */}
+      <div className="bg-[#D3D3D3] border-b border-gray-400 h-10">
+        <div className="flex h-full">
+          <button
+            onClick={() => setActiveSubTab('Case Entry')}
+            className={`px-4 h-full ${
+              activeSubTab === 'Case Entry' ? 'bg-[#E8E8E8]' : ''
+            } border-r border-gray-400`}
+          >
+            Case Entry
+          </button>
+          <button
+            onClick={() => setActiveSubTab('Additional Information')}
+            className={`px-4 h-full ${
+              activeSubTab === 'Additional Information' ? 'bg-[#E8E8E8]' : ''
+            } border-r border-gray-400`}
+          >
+            Additional Information
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto bg-[#E8E8E8]">
+        <EntryNavigation
+          username="SUPERVISOR"
+          fullName="John Supervisor"
+          caseNumber={caseNumber}
+          onLogout={handleLogout}
+          onCloseCase={handleCloseCase}
+          onChangeCaseNumber={handleChangeCaseNumber}
+          onPrintCase={handlePrintCase}
+        >
+          {/* Main Content */}
+          <div className="max-w-5xl mx-auto p-6">
+            <div className="bg-[#D3D3D3] rounded shadow-lg p-6">
+              <div className="grid grid-cols-[250px,1fr] gap-x-6 gap-y-4 items-center">
+                {/* Form Content */}
+                <div className="text-black font-medium">The location is:</div>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={handleChange}
+                  name="location"
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+                />
+                {/* Rest of the form fields */}
+              </div>
+            </div>
+          </div>
+        </EntryNavigation>
+      </div>
+    </div>
+      {/* Top Menu Bar - Fixed */}
+      <div className="bg-[#E8E8E8] border-b border-gray-300 h-8">
+        <div className="flex items-center h-full px-2">
+          <div className="flex space-x-4">
+            <button className="text-black hover:bg-gray-300 px-2 h-full">File</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">View</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Spec Log</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Options</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Go to language</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Tabs</button>
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Help</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Timer Bar - Fixed */}
+      <div className="bg-[#1a1a1a] border-b border-gray-700 h-10">
+        <div className="flex items-center justify-between h-full px-2">
+          <div className="text-white font-mono text-2xl font-bold">{formatTime(elapsed)}</div>
+          <div className="flex-1 flex justify-center px-8">
+            <div className="w-2/3 max-w-xl h-4 bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full bg-[#1D9BF0] transition-all duration-1000" 
+                   style={{width: `${progress}%`}}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation Tabs - Fixed */}
+      <div className="bg-[#C0C0C0] border-b border-gray-400 h-10">
+        <div className="flex h-full">
+          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 h-full ${
+                tab === activeTab
+                  ? 'bg-white text-black font-medium'
+                  : 'text-black hover:bg-gray-300 transition'
+              } border-r border-gray-400`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sub Navigation - Fixed */}
+      <div className="bg-[#D3D3D3] border-b border-gray-400 h-10">
+        <div className="flex h-full">
+          <button
+            onClick={() => setActiveSubTab('Case Entry')}
+            className={`px-4 h-full ${
+              activeSubTab === 'Case Entry' ? 'bg-[#E8E8E8]' : ''
+            } border-r border-gray-400`}
+          >
+            Case Entry
+          </button>
+          <button
+            onClick={() => setActiveSubTab('Additional Information')}
+            className={`px-4 h-full ${
+              activeSubTab === 'Additional Information' ? 'bg-[#E8E8E8]' : ''
+            } border-r border-gray-400`}
+          >
+            Additional Information
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area - Scrollable */}
+      <div className="flex-1 overflow-auto bg-[#E8E8E8]">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="bg-[#D3D3D3] rounded shadow-lg p-6">
+            <div className="grid grid-cols-[250px,1fr] gap-x-6 gap-y-4 items-center">
+              <div className="text-black font-medium">The location is:</div>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={handleChange}
+                name="location"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              />
+
+              <div className="text-black font-medium">The phone number is:</div>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                name="phoneNumber"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              />
+
+              <div className="text-black font-medium">The problem is:</div>
+              <input
+                type="text"
+                value={formData.problem}
+                onChange={handleChange}
+                name="problem"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              />
+
+              <div className="text-black font-medium">Are you with the patient?</div>
+              <select
+                value={formData.withPatient}
+                onChange={handleChange}
+                name="withPatient"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              >
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-black font-medium">Number of people hurt:</div>
+              <input
+                type="number"
+                value={formData.numHurt}
+                onChange={handleChange}
+                name="numHurt"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              />
+
+              <div className="text-black font-medium">Age:</div>
+              <input
+                type="text"
+                value={formData.age}
+                onChange={handleChange}
+                name="age"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              />
+
+              <div className="text-black font-medium">Gender:</div>
+              <select
+                value={formData.gender}
+                onChange={handleChange}
+                name="gender"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+
+              <div className="text-black font-medium">Is patient conscious?</div>
+              <select
+                value={formData.conscious}
+                onChange={handleChange}
+                name="conscious"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-black font-medium">Is patient breathing?</div>
+              <select
+                value={formData.breathing}
+                onChange={handleChange}
+                name="breathing"
+                className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+
+              <div className="text-black font-medium">Chief Complaint:</div>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={formData.chiefComplaint}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      chiefComplaint: value
+                    }));
+                    
+                    // Only show suggestions if user has typed something
+                    if (value.trim().length > 0) {
+                      const searchTerm = value.toLowerCase();
+                      // If input starts with a number, filter by protocol number
+                      if (/^\d+/.test(value)) {
+                        const filtered = protocols.filter(protocol =>
+                          protocol.id.startsWith(value.trim())
+                        );
+                        setFilteredProtocols(filtered);
+                      } else {
+                        // Otherwise filter by protocol name
+                        const filtered = protocols.filter(protocol =>
+                          protocol.name.toLowerCase().includes(searchTerm)
+                        );
+                        setFilteredProtocols(filtered);
+                      }
+                    } else {
+                      setFilteredProtocols([]); // Clear dropdown when input is empty
+                    }
+                  }}
+                  onFocus={() => {
+                    // Ensure dropdown is hidden when focusing empty field
+                    if (!formData.chiefComplaint || !formData.chiefComplaint.trim()) {
+                      setFilteredProtocols([]);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Hide dropdown after a short delay (allows for clicking dropdown items)
+                    setTimeout(() => setFilteredProtocols([]), 200);
+                  }}
+                  name="chiefComplaint"
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+                  placeholder="Type a number or search protocols..."
+                />
+                {filteredProtocols.length > 0 && formData.chiefComplaint.trim().length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+                    {filteredProtocols.map(protocol => (
+                      <div
+                        key={protocol.id}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-black"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            chiefComplaint: `${protocol.id} - ${protocol.name}`
+                          }));
+                          setFilteredProtocols([]);
+                        }}
+                      >
+                        {protocol.id} - {protocol.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div className="bg-[#1a1a1a] border-t border-gray-700 h-12">
+        <div className="grid grid-cols-3 text-white px-4 py-2">
+          <div>
+            <div className="text-sm">SUPERVISOR</div>
+            <div className="text-xs text-gray-400">Case: {caseNumber}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm">Status: Ready</div>
+          </div>
+          <div className="text-right">
+            <div className="text-sm">DISPATCHUMS</div>
+            <div className="text-xs text-gray-400">v0.0.1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

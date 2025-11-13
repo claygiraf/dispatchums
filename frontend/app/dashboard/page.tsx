@@ -335,9 +335,10 @@ export default function DashboardPage() {
                         setShowFileMenu(false);
                         setShowChangeCaseNumber(true);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#0066CC] hover:text-white text-black"
+                      className="w-full text-left px-4 py-2 hover:bg-[#0066CC] hover:text-white flex justify-between text-black"
                     >
-                      Change case number...
+                      <span>Change case number...</span>
+                      <span className="text-xs">Ctrl+G</span>
                     </button>
                     <div className="border-t border-gray-400 my-1"></div>
                     <button 
@@ -345,9 +346,10 @@ export default function DashboardPage() {
                         setShowFileMenu(false);
                         setShowPrintCase(true);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-[#0066CC] hover:text-white text-black"
+                      className="w-full text-left px-4 py-2 hover:bg-[#0066CC] hover:text-white flex justify-between text-black"
                     >
-                      Print case...
+                      <span>Print case...</span>
+                      <span className="text-xs">Ctrl+P</span>
                     </button>
                     <div className="border-t border-gray-400 my-1"></div>
                     <button 
@@ -1434,7 +1436,7 @@ export default function DashboardPage() {
                 <label className="text-black text-sm whitespace-nowrap">Case number:</label>
                 <input
                   type="text"
-                  defaultValue="2000005541"
+                  defaultValue={caseNumber || ''}
                   className="flex-1 px-3 py-2 bg-white text-black border-2 border-gray-400 focus:outline-none focus:border-[#0066CC]"
                 />
               </div>
