@@ -31,7 +31,7 @@ export default function RootLayout({
         <script 
           async
           defer
-          src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyBk7nQUmLoluH0eVdT3FnBeNreGcqqg9Uk&libraries=places`}
+          src={`https://maps.googleapis.com/maps/api/js?key=putyourapihere`}
         />
       </head>
       <body className={`${inter.variable} ${playfair.variable} font-sans`}>
