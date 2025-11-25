@@ -168,6 +168,8 @@ export default function DashboardPage() {
   const [tempGender, setTempGender] = useState('Male');
   const [dob, setDob] = useState('');
   const [tempDob, setTempDob] = useState('');
+  const [unit, setUnit] = useState('MECC HUMS');
+  const [tempUnit, setTempUnit] = useState('MECC HUMS');
   const [isWaiting, setIsWaiting] = useState(false);
   const [nextIncident, setNextIncident] = useState<number | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -817,13 +819,24 @@ export default function DashboardPage() {
       {/* ALL DIALOGS BELOW */}
 
       {/* Invalid Case Number Modal */}
-      {showInvalidCaseNumber && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-white rounded-lg p-8 shadow-2xl border-2 border-[#1D9BF0] pointer-events-auto">
-            <h3 className="text-xl font-semibold text-black mb-4">Case Number Invalid</h3>
+{showInvalidCaseNumber && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+    <div className="bg-white rounded-lg p-8 shadow-2xl border-2 border-[#1D9BF0] pointer-events-auto">
+      <h3 className="text-xl font-semibold text-black mb-4">Case Number Invalid</h3>
+      
+      {/* Note with blinking icon and red text */}
+            <div className="flex items-center mb-4">
+              <span className="animate-pulse text-red-500 mr-2 text-lg">⚠️</span>
+              <p className="text-red-500 font-medium">
+                Note: 9 digits case number format (year-month-case number)
+              </p>
+            </div>
+            
+            {/* Confirmation question */}
             <p className="text-gray-700 mb-6">
-              It must be 9 digits, confirm and continue to create new case with auto assign case number?
+              Confirm & continue to create new case with auto assign case number?
             </p>
+            
             <div className="flex gap-4 justify-end">
               <button
                 onClick={() => setShowInvalidCaseNumber(false)}
@@ -2083,7 +2096,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <label className="block text-black text-sm mb-1">ID</label>
-                    <input type="text" defaultValue="SUP001" className="w-full px-3 py-2 bg-white text-black border border-gray-400 focus:outline-none focus:border-[#0066CC]" readOnly />
+                    <input type="text" defaultValue="PED001" className="w-full px-3 py-2 bg-white text-black border border-gray-400 focus:outline-none focus:border-[#0066CC]" readOnly />
                   </div>
                 </div>
 
@@ -2098,7 +2111,6 @@ export default function DashboardPage() {
                       >
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                        <option value="other">Other</option>
                       </select>
                       <button 
                         onClick={() => {
@@ -2123,6 +2135,37 @@ export default function DashboardPage() {
                       <button 
                         onClick={() => {
                           setChangeType('date of birth');
+                          setShowChangeConfirm(true);
+                        }}
+                        className="text-gray-500 hover:text-[#0066CC] transition"
+                      >
+                        <FaPencilAlt className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  <div>
+                    <label className="block text-black text-sm mb-1">Unit</label>
+                    <div className="flex gap-2 items-center">
+                      <select 
+                        value={tempUnit}
+                        onChange={(e) => setTempUnit(e.target.value)}
+                        className="w-full px-3 py-2 bg-white text-black border border-gray-400 focus:outline-none focus:border-[#0066CC]"
+                      >
+                        <option value="MECC HUMS">MECC HUMS</option>
+                        <option value="MECC HQE">MECC HQE</option>
+                        <option value="MECC Tawau">MECC Tawau</option>
+                        <option value="MECC Keningau">MECC Keningau</option>
+                        <option value="MECC Beaufort">MECC Beaufort</option>
+                        <option value="MECC Semporna">MECC Semporna</option>
+                        <option value="MECC Lahad Datu">MECC Lahad Datu</option>
+                        <option value="MECC Sandakan">MECC Sandakan</option>
+                      </select>
+                      <button 
+                        onClick={() => {
+                          setChangeType('unit');
                           setShowChangeConfirm(true);
                         }}
                         className="text-gray-500 hover:text-[#0066CC] transition"

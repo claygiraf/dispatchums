@@ -59,7 +59,7 @@ const ambulances = [
   { id: 'UTCKK01', name: 'UTC KK 01', status: 'available' },
   { id: 'BSMM01', name: 'BSMM 01', status: 'available' },
   { id: 'STJOHN01', name: 'ST. JOHN 01', status: 'available' },
-  { id: 'KMENGGATOL01', name: 'KK MENGGATOL 01', status: 'unavailable' }
+  { id: 'KMENGGATOL01', name: 'KK MENGGATAL 01', status: 'unavailable' }
 ];
 
 export default function EntryPage() {
@@ -71,7 +71,7 @@ export default function EntryPage() {
   const [kqAnswers, setKqAnswers] = useState({
     question1: '', // completely alert
     question2: '', // difficulty speaking
-    question2a: '', // color change description
+    question2a: '', // color change description 
     question2i: '', // tracheostomy distress
     question3: '', // changing color
     question3a: '', // color change description
@@ -114,6 +114,7 @@ export default function EntryPage() {
   const [showCaseCompletionModal, setShowCaseCompletionModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showConfirmSummaryModal, setShowConfirmSummaryModal] = useState(false);
+  const [showInlineTimelineSummary, setShowInlineTimelineSummary] = useState(false);
 
   const [formData, setFormData] = useState({
     // Case Entry Fields
@@ -136,6 +137,28 @@ export default function EntryPage() {
     notes: ''
   });
 
+  // State to track which fields have been interacted with
+  const [fieldInteractions, setFieldInteractions] = useState<{[key: string]: boolean}>({});
+    // ADD THESE DEBUGGING EFFECTS HERE:
+      useEffect(() => {
+        console.log('showCaseCompletionModal changed to:', showCaseCompletionModal);
+      }, [showCaseCompletionModal]);
+
+      useEffect(() => {
+        console.log('showDLS changed to:', showDLS);
+      }, [showDLS]);
+      // END DEBUGGING EFFECTS
+
+      // Auto-save effect
+      useEffect(() => {
+        const saveTimer = setTimeout(() => {
+          setAutoSaved(true);
+          setTimeout(() => setAutoSaved(false), 2000);
+        }, 1000);
+
+        return () => clearTimeout(saveTimer);
+      }, [formData, kqAnswers]);
+
   // Auto-save effect
   useEffect(() => {
     const saveTimer = setTimeout(() => {
@@ -153,26 +176,39 @@ export default function EntryPage() {
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
 
-  // Effect to initialize map when container becomes visible
+  // Effect to initialize/update map when container becomes visible or location changes
   useEffect(() => {
-    if (showMap && mapLocation && mapRef.current && !googleMapRef.current) {
+    if (showMap && mapLocation && mapRef.current) {
       // Small delay to ensure container is ready
       setTimeout(() => {
         if (mapRef.current) {
-          googleMapRef.current = new google.maps.Map(mapRef.current, {
-            center: mapLocation,
-            zoom: 15
-          });
+          // Create new map if it doesn't exist
+          if (!googleMapRef.current) {
+            googleMapRef.current = new google.maps.Map(mapRef.current, {
+              center: mapLocation,
+              zoom: 15
+            });
+          } else {
+            // Update existing map center
+            googleMapRef.current.setCenter(mapLocation);
+          }
           
-          markerRef.current = new google.maps.Marker({
-            position: mapLocation,
-            map: googleMapRef.current,
-            title: formData.location
-          });
+          // Update existing marker or create new one
+          if (markerRef.current) {
+            // Update existing marker position
+            markerRef.current.setPosition(mapLocation);
+          } else {
+            // Create new marker
+            markerRef.current = new google.maps.Marker({
+              position: mapLocation,
+              map: googleMapRef.current,
+              title: formData.location
+            });
+          }
         }
       }, 100);
     }
-  }, [showMap, mapLocation]);
+  }, [showMap, mapLocation, formData.location]);
 
   const validateLocation = async () => {
     if (!formData.location) return;
@@ -202,6 +238,17 @@ export default function EntryPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Reset location validation state when location is changed
+    if (name === 'location') {
+      setIsLocationValid(false);
+      setShowMap(false);
+      setMapLocation(null);
+      // Clean up existing map references
+      markerRef.current = null;
+      googleMapRef.current = null;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -378,12 +425,28 @@ export default function EntryPage() {
   };
 
   const handleKqComplete = () => {
+    // If dispatch has already been completed, go directly to PDI
+    if (hasDispatchedFromQ1 || dispatchComplete) {
+      setNavigationHistory(prev => [...prev, { page: 'kq', kqPage: currentKqPage }]);
+      setCurrentPage('pdi');
+      return;
+    }
+    
+    // Otherwise, show dispatch confirmation modal
     const determinant = calculateDeterminant();
     setSelectedDeterminant(determinant);
     setShowDispatchConfirm(true);
   };
 
   const handleKqNext = () => {
+    // If patient is not alert (question1 = 'no') and we're on page 1, proceed to PDI after dispatch
+    if (kqAnswers.question1 === 'no' && currentKqPage === 1) {
+      // Add to navigation history and go to PDI
+      setNavigationHistory(prev => [...prev, { page: 'kq', kqPage: currentKqPage }]);
+      setCurrentPage('pdi');
+      return;
+    }
+    
     if (shouldSkipToQuestion5()) {
       setCurrentKqPage(5);
     } else if (currentKqPage < 6) {
@@ -492,6 +555,11 @@ export default function EntryPage() {
   };
 
   const canProceedToNext = () => {
+    // If dispatch has already occurred, allow proceeding regardless of current answers
+    if (hasDispatchedFromQ1 || dispatchComplete) {
+      return true;
+    }
+    
     switch (currentKqPage) {
       case 1:
         return kqAnswers.question1 !== '';
@@ -505,7 +573,10 @@ export default function EntryPage() {
       case 5:
         return kqAnswers.question5 !== '';
       case 6:
-        return kqAnswers.question6 !== '';
+        // Question 6 must be answered, and if answered "yes", then question6a must also be answered
+        if (kqAnswers.question6 === '') return false;
+        if (kqAnswers.question6 === 'yes' && kqAnswers.question6a === '') return false;
+        return true;
       default:
         return false;
     }
@@ -607,17 +678,17 @@ export default function EntryPage() {
     setShowExitModal(true);
   };
 
-  const confirmCaseExit = () => {
-    setShowExitModal(false);
-    // Reset any conflicting page states
-    setCurrentPage('entry');
-    setShowStep5Dialog(false);
-    setShowPdiFollowUp(false);
-    // Show DLS
-    setShowDLS(true);
-    setDlsCallerType(null);
-    setDlsStage(1);
-  };
+const confirmCaseExit = () => {
+  setShowExitModal(false);
+  // Reset any conflicting page states
+  setCurrentPage('dls');  // Changed from 'entry' to 'dls'
+  setShowStep5Dialog(false);
+  setShowPdiFollowUp(false);
+  // Show DLS
+  setShowDLS(true);
+  setDlsCallerType(null);
+  setDlsStage(1);
+};
 
   // DLS Handler Functions
   const handleDlsCallerSelection = (type: '1st' | '2nd') => {
@@ -630,15 +701,14 @@ export default function EntryPage() {
   };
 
     const handleDlsEnd = () => {
+      // Show case completion confirmation modal
       setShowCaseCompletionModal(true);
-      setShowDLS(false); // Close DLS when showing completion modal
     };
 
   const confirmCaseCompletion = () => {
     setShowCaseCompletionModal(false);
     setShowDLS(false);
-    // Show confirmation to summary modal
-    setShowConfirmSummaryModal(true);
+    setCurrentPage('summary'); // Navigate to Timeline Summary with Timestamps
   };
 
   const confirmToSummary = () => {
@@ -647,7 +717,7 @@ export default function EntryPage() {
   };
 
   const handleSaveAndReturn = () => {
-    setShowSummaryModal(false);
+    setShowConfirmSummaryModal(false);
     // Redirect to dashboard
     window.location.href = '/dashboard';
   };
@@ -668,72 +738,233 @@ export default function EntryPage() {
         </div>
 
         <div className="space-y-6">
-          {/* Case Information Section */}
+          {/* Case Entry Information */}
           <div className="bg-white p-4 rounded border border-gray-400">
-            <h4 className="text-lg font-bold mb-3 text-black">Case Information</h4>
+            <h4 className="text-lg font-bold mb-4 text-black">Case Entry Information</h4>
             <div className="grid grid-cols-2 gap-4 text-sm text-black">
-              <div><strong>Case Number:</strong> 2024001</div>
-              <div><strong>Date/Time:</strong> {new Date().toLocaleString()}</div>
-              <div><strong>Location:</strong> {formData.location || 'Not specified'}</div>
-              <div><strong>Phone Number:</strong> {formData.phoneNumber || 'Not specified'}</div>
-              <div><strong>Problem:</strong> {formData.problem || 'Not specified'}</div>
-              <div><strong>Dispatcher:</strong> SUPERVISOR (John Supervisor)</div>
-            </div>
-          </div>
-
-          {/* Key Questions Summary */}
-          <div className="bg-white p-4 rounded border border-gray-400">
-            <h4 className="text-lg font-bold mb-3 text-black">Key Questions (Protocol 6 - Breathing Problems)</h4>
-            <div className="space-y-2 text-sm text-black">
-              {kqAnswers.question1 && (
-                <div><strong>Q1: Completely alert:</strong> {kqAnswers.question1}</div>
-              )}
-              {kqAnswers.question2 && (
-                <div><strong>Q2: Difficulty speaking:</strong> {kqAnswers.question2}</div>
-              )}
-              {kqAnswers.question3 && (
-                <div><strong>Q3: Changing color:</strong> {kqAnswers.question3}</div>
-              )}
-              {kqAnswers.question4 && (
-                <div><strong>Q4: Clammy/cold sweats:</strong> {kqAnswers.question4}</div>
-              )}
-              {kqAnswers.question5 && (
-                <div><strong>Q5: Asthma/lung problems:</strong> {kqAnswers.question5}</div>
-              )}
-              {kqAnswers.question6 && (
-                <div><strong>Q6: Special equipment:</strong> {kqAnswers.question6}</div>
-              )}
-            </div>
-          </div>
-
-          {/* Dispatch Information */}
-          {selectedDeterminant && (
-            <div className="bg-white p-4 rounded border border-gray-400">
-              <h4 className="text-lg font-bold mb-3 text-black">Dispatch Information</h4>
-              <div className="text-sm text-black">
-                <div><strong>Determinant:</strong> <span className="text-red-600 font-bold">{selectedDeterminant}</span></div>
-                {selectedAmbulances.length > 0 && (
-                  <div><strong>Dispatched Units:</strong> {selectedAmbulances.join(', ')}</div>
-                )}
-                <div><strong>Priority Level:</strong> {
-                  selectedDeterminant?.includes('E') ? 'ECHO (Highest Priority)' : 
-                  selectedDeterminant?.includes('D') ? 'DELTA (High Priority)' : 
-                  selectedDeterminant?.includes('C') ? 'CHARLIE (Medium Priority)' : 'Standard Priority'
-                }</div>
+              <div className="space-y-2">
+                <div><strong>Case Number:</strong> 2024001</div>
+                <div><strong>Date/Time:</strong> {new Date().toLocaleString()}</div>
+                <div><strong>Location:</strong> {formData.location || 'Not specified'}</div>
+                <div><strong>Phone Number:</strong> {formData.phoneNumber || 'Not specified'}</div>
+                <div><strong>Problem:</strong> {formData.problem || 'Not specified'}</div>
+                <div><strong>Chief Complaint:</strong> {formData.chiefComplaint || 'Not specified'}</div>
+              </div>
+              <div className="space-y-2">
+                <div><strong>Protocol:</strong> 6 - Breathing Problems</div>
+                <div><strong>Age:</strong> {formData.age || 'Not specified'}</div>
+                <div><strong>Gender:</strong> {formData.gender || 'Not specified'}</div>
+                <div><strong>With Patient:</strong> {formData.withPatient || 'Not specified'}</div>
+                <div><strong>Conscious:</strong> {formData.conscious || 'Not specified'}</div>
+                <div><strong>Breathing:</strong> {formData.breathing || 'Not specified'}</div>
               </div>
             </div>
-          )}
+            {formData.notes && (
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <div><strong>Additional Notes:</strong> {formData.notes}</div>
+              </div>
+            )}
+          </div>
 
-          {/* Case Status */}
-          <div className="bg-green-50 p-4 rounded border border-green-300">
-            <h4 className="text-lg font-bold mb-3 text-green-800">Case Status</h4>
-            <div className="text-sm text-green-800">
-              <div>✅ Case Entry: Completed</div>
-              <div>✅ Key Questions: {Object.keys(kqAnswers).filter(k => kqAnswers[k as keyof typeof kqAnswers]).length}/6 answered</div>
-              <div>✅ Dispatch: {selectedDeterminant ? 'Completed' : 'Pending'}</div>
-              <div>✅ PDI: {currentPage === 'pdi' || currentPage === 'cpr' ? 'In Progress' : 'Completed'}</div>
-              <div>✅ DLS: {showDLS ? 'Completed' : 'Pending'}</div>
+          {/* Dispatcher Information */}
+          <div className="bg-gray-50 p-4 rounded border border-gray-400">
+            <h4 className="text-lg font-bold mb-4 text-black">Dispatcher Information</h4>
+            <div className="grid grid-cols-3 gap-4 text-sm text-black">
+              <div><strong>Dispatcher Name:</strong> John Supervisor</div>
+              <div><strong>ID:</strong> PED001</div>
+              <div><strong>Unit:</strong> MECC HUMS</div>
             </div>
+          </div>
+
+          {/* Timeline Summary with Timestamps */}
+          <div className="bg-blue-50 p-4 rounded border">
+            <h4 className="text-lg font-bold mb-3 text-black">Timeline Summary with Timestamps</h4>
+            <div className="space-y-4">
+              {/* Case Entry Started */}
+              <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
+                <div className="flex flex-col items-center">
+                  <div className="text-3xl font-mono font-bold text-black leading-none">
+                    {new Date(Date.now() - 600000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-xs font-mono text-gray-600 mt-1">
+                    {new Date(Date.now() - 600000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-black text-lg">Case Entry Started</div>
+                  <div className="text-sm text-black mt-1">Initial case information collected</div>
+                </div>
+              </div>
+              
+              {/* Key Questions Completed */}
+              <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
+                <div className="flex flex-col items-center">
+                  <div className="text-3xl font-mono font-bold text-black leading-none">
+                    {new Date(Date.now() - 480000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-xs font-mono text-gray-600 mt-1">
+                    {new Date(Date.now() - 480000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-red-600 text-lg">Key Questions Completed</div>
+                  <div className="text-sm text-black mt-1">
+                    <span className="font-bold text-red-600">Protocol 6 - Breathing Problems</span>
+                    <br />• Q1: Patient alert status - <span className="font-bold">{kqAnswers.question1 || 'Not answered'}</span>
+                    {kqAnswers.question2 && <><br />• Q2: Difficulty speaking - <span className="font-bold text-red-600">{kqAnswers.question2}</span></>}
+                    {kqAnswers.question3 && <><br />• Q3: Changing color - <span className="font-bold text-red-600">{kqAnswers.question3}</span></>}
+                    {kqAnswers.question4 && <><br />• Q4: Clammy/cold sweats - <span className="font-bold">{kqAnswers.question4}</span></>}
+                    {kqAnswers.question5 && <><br />• Q5: Asthma/lung problems - <span className="font-bold">{kqAnswers.question5}</span></>}
+                    {kqAnswers.question6 && <><br />• Q6: Special equipment - <span className="font-bold">{kqAnswers.question6}</span></>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dispatch Determination */}
+              {selectedDeterminant && (
+                <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
+                  <div className="flex flex-col items-center">
+                    <div className="text-3xl font-mono font-bold text-red-600 leading-none">
+                      {new Date(Date.now() - 420000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    </div>
+                    <div className="text-xs font-mono text-gray-600 mt-1">
+                      {new Date(Date.now() - 420000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-red-600 text-lg">DISPATCH DETERMINATION</div>
+                    <div className="text-sm text-black mt-1">
+                      Determinant: <span className="font-bold text-red-700 bg-red-100 px-2 py-1 rounded">{selectedDeterminant}</span>
+                      <br />Ambulances dispatched: <span className="font-bold text-red-600">{selectedAmbulances.join(', ') || 'None'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Post-Dispatch Instructions */}
+              <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
+                <div className="flex flex-col items-center">
+                  <div className="text-3xl font-mono font-bold text-black leading-none">
+                    {new Date(Date.now() - 360000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-xs font-mono text-gray-600 mt-1">
+                    {new Date(Date.now() - 360000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-black text-lg">Post-Dispatch Instructions</div>
+                  <div className="text-sm text-black mt-1">
+                    PDI instructions provided to caller
+                    <br />• <span className="font-bold text-red-600">Ambulance dispatch confirmed</span>
+                    • Instructions given for breathing problems
+                  </div>
+                </div>
+              </div>
+
+              {/* Dispatch Life Support */}
+              <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
+                <div className="flex flex-col items-center">
+                  <div className="text-3xl font-mono font-bold text-black leading-none">
+                    {new Date(Date.now() - 180000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-xs font-mono text-gray-600 mt-1">
+                    {new Date(Date.now() - 180000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-black text-lg">Dispatch Life Support</div>
+                  <div className="text-sm text-black mt-1">
+                    DLS instructions completed
+                    <br />• {dlsCallerType === '1st' ? '1st Party' : dlsCallerType === '2nd' ? '2nd Party' : 'Standard'} caller protocol followed
+                    • Case monitoring until arrival
+                  </div> 
+                </div>
+              </div>
+
+              {/* Case Completed */}
+              <div className="flex items-start gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="text-3xl font-mono font-bold text-black leading-none">
+                    {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
+                  <div className="text-xs font-mono text-gray-600 mt-1">
+                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-green-600 text-lg">CASE COMPLETED</div>
+                  <div className="text-sm text-black mt-1">All protocols completed successfully</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="bg-yellow-50 p-4 rounded border">
+            <h4 className="text-lg font-bold mb-3 text-black">Key Metrics</h4>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-blue-600">10:00</div>
+                <div className="text-sm text-black">Total Case Time</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">2:30</div>
+                <div className="text-sm text-black">Time to Dispatch</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">{selectedAmbulances.length || 0}</div>
+                <div className="text-sm text-black">Units Dispatched</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Points Highlighted */}
+          <div className="bg-red-50 p-4 rounded border border-red-200">
+            <h4 className="text-lg font-bold mb-3 text-red-800">Critical Points Summary</h4>
+            <ul className="space-y-2 text-sm text-black">
+              {kqAnswers.question1 === 'no' && (
+                <li className="flex items-center">
+                  <span className="text-red-600 mr-2">⚠️</span>
+                  <span className="text-black"><strong>CRITICAL:</strong> Patient not alert - Immediate dispatch required</span>
+                </li>
+              )}
+              {kqAnswers.question2 === 'yes' && (
+                <li className="flex items-center">
+                  <span className="text-orange-600 mr-2">⚠️</span>
+                  <span className="text-black"><strong>HIGH PRIORITY:</strong> Difficulty speaking between breaths</span>
+                </li>
+              )}
+              {kqAnswers.question3 === 'yes' && (
+                <li className="flex items-center">
+                  <span className="text-orange-600 mr-2">⚠️</span>
+                  <span className="text-black"><strong>HIGH PRIORITY:</strong> Patient changing color</span>
+                </li>
+              )}
+              {selectedDeterminant && (
+                <li className="flex items-center">
+                  <span className="text-red-600 mr-2">🚨</span>
+                  <span className="text-black"><strong>DISPATCH LEVEL:</strong> {selectedDeterminant} - {selectedDeterminant.includes('E') ? 'ECHO (Highest Priority)' : selectedDeterminant.includes('D') ? 'DELTA (High Priority)' : selectedDeterminant.includes('C') ? 'CHARLIE (Medium Priority)' : 'Standard Priority'}</span>
+                </li>
+              )}
+              <li className="flex items-center">
+                <span className="text-green-600 mr-2">✅</span>
+                <span className="text-black"><strong>PROTOCOL COMPLETE:</strong> All required instructions provided to caller</span>
+              </li>
+              <li className="flex items-center">
+                <span className="text-blue-600 mr-2">📋</span>
+                <span className="text-black"><strong>DOCUMENTATION:</strong> Case fully documented with timestamps</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Action Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowConfirmSummaryModal(true)}
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-lg shadow-lg"
+            >
+              Save Case & Return to Dashboard
+            </button>
           </div>
         </div>
       </div>
@@ -1083,10 +1314,10 @@ export default function EntryPage() {
           {currentKqPage < 6 ? (
             <button
               onClick={handleKqNext}
-              disabled={!canProceedToNext() || (kqAnswers.question1 === 'no' && currentKqPage === 1)}
+              disabled={!canProceedToNext()}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {(kqAnswers.question1 === 'no' && currentKqPage === 1) ? 'Dispatch Required - See Modal' : 'Confirm & Continue →'}
+              {(kqAnswers.question1 === 'no' && currentKqPage === 1) ? 'Proceed to PDI' : 'Confirm & Continue →'}
             </button>
           ) : (
             <button
@@ -1094,7 +1325,7 @@ export default function EntryPage() {
               disabled={!canProceedToNext()}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Complete KQ & Determine Dispatch →
+              {(hasDispatchedFromQ1 || dispatchComplete) ? 'Proceed to PDI' : 'Complete KQ / Determine Dispatch'}
             </button>
           )}
         </div>
@@ -1545,21 +1776,45 @@ export default function EntryPage() {
             </div>
           </div>
 
-          {/* Follow-up options for instruction a */}
-          {showPdiFollowUp && checkedItems.a && (
-            <div className="ml-6 space-y-2">
+          {/* Follow-up options for instruction a - Now independent buttons */}
+          {checkedItems.a && (
+            <div className="ml-6 flex gap-4 items-start">
               <button 
-                onClick={() => handleButtonClick('pdi-xcard', handleCaseExit)} 
-                className={getButtonClass('pdi-xcard', "text-left px-4 py-2 bg-purple-100 text-black border border-purple-400 rounded hover:bg-purple-200")}
+                onClick={() => {
+                  // Mark button as selected
+                  setSelectedButtons(prev => ({
+                    ...prev,
+                    'pdi-xcard': true
+                  }));
+                  // Immediately show exit modal
+                  setShowExitModal(true);
+                }} 
+                className={selectedButtons['pdi-xcard'] ? 
+                  "text-left px-4 py-2 bg-blue-200 text-blue-800 border border-purple-400 rounded hover:bg-blue-300" : 
+                  "text-left px-4 py-2 bg-purple-100 text-black border border-purple-400 rounded hover:bg-purple-200"
+                }
               >
                 X-CARD
               </button>
               <button 
-                onClick={() => handleButtonClick('pdi-followup', () => {
+                onClick={() => {
+                  // Mark button as selected
+                  setSelectedButtons(prev => ({
+                    ...prev,
+                    'pdi-followup': true
+                  }));
+                  // Clear any existing modal states to prevent conflicts
+                  setShowCaseCompletionModal(false);
+                  setShowExitModal(false);
+                  setShowDLS(false);
+                  // Go to CPR instructions
                   setCurrentCprStep('1');
                   setCurrentPage('cpr');
-                })} 
-                className={getButtonClass('pdi-followup', "text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
+                }} 
+                className={selectedButtons['pdi-followup'] ? 
+                  "text-left px-4 py-2 bg-blue-200 text-blue-800 border border-green-400 rounded hover:bg-blue-300" : 
+                  "text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200"
+                }
               >
                 Follow up
               </button>
@@ -1654,16 +1909,33 @@ export default function EntryPage() {
           <button
             onClick={() => {
               if (checkedItems.a || checkedItems.b || checkedItems.c || checkedItems.d || checkedItems.e) {
-                // If instruction a is checked and follow-up not yet selected, require follow-up action
-                if (checkedItems.a && showPdiFollowUp && !selectedButtons['pdi-xcard'] && !selectedButtons['pdi-followup']) {
-                  alert('Please select either X-CARD or Follow up option for instruction a');
-                  return;
+                // If only instruction a is checked, user must choose either X-CARD or Follow up
+                if (checkedItems.a && !checkedItems.b && !checkedItems.c && !checkedItems.d && !checkedItems.e) {
+                  if (!selectedButtons['pdi-xcard'] && !selectedButtons['pdi-followup']) {
+                    alert('Please select either X-CARD or Follow up option for instruction a');
+                    return;
+                  }
+                  // If X-CARD was selected, show exit modal immediately
+                  if (selectedButtons['pdi-xcard']) {
+                    setShowExitModal(true);
+                    return;
+                  }
                 }
-                // If no follow-up options shown (other instructions checked), proceed to step 1
-                if (!showPdiFollowUp) {
+                // If Follow up was selected, go to CPR
+                if (selectedButtons['pdi-followup']) {
                   setCurrentCprStep('1');
                   setCurrentPage('cpr');
+                  return;
                 }
+                // If other instructions are checked without instruction a, proceed to CPR
+                if (!checkedItems.a && (checkedItems.b || checkedItems.c || checkedItems.d || checkedItems.e)) {
+                  setCurrentCprStep('1');
+                  setCurrentPage('cpr');
+                  return;
+                }
+                // Default case: if instruction a is not exclusively checked, go to CPR
+                setCurrentCprStep('1');
+                setCurrentPage('cpr');
               } else {
                 alert('Please check at least one instruction above to proceed');
               }
@@ -1775,11 +2047,15 @@ export default function EntryPage() {
                     Stay on Line → 3
                   </button>
                   <button 
-                    onClick={() => handleButtonClick('dls-1st-end', handleDlsEnd)} 
-                    className={getButtonClass('dls-1st-end', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
-                  >
-                    End → Case completed, confirm to save the case?
-                  </button>
+                onClick={() => {
+                  handleButtonClick('dls-1st-end', () => {});
+                  setShowCaseCompletionModal(true);
+                  setShowDLS(false);
+                }} 
+                className={getButtonClass('dls-1st-end', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
+              >
+                End → Case completed, confirm to save the case?
+              </button>
                 </div>
               </div>
             </div>
@@ -1800,13 +2076,33 @@ export default function EntryPage() {
                 <div className="space-y-2">
                   <button 
             onClick={() => {
+              console.log('=== DLS END BUTTON CLICKED ===');
+              console.log('Current state before changes:');
+              console.log('- showCaseCompletionModal:', showCaseCompletionModal);
+              console.log('- showDLS:', showDLS);
+              console.log('- currentPage:', currentPage);
+              
               handleButtonClick('dls-1st-end-s3', () => {});
-              handleDlsEnd();
-            }} 
-            className={getButtonClass('dls-1st-end-s3', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
-          >
-            End → Case completed, confirm to save the case?
-          </button>
+              
+              console.log('About to set showCaseCompletionModal to true');
+              setShowCaseCompletionModal(true);
+              
+              console.log('About to set showDLS to false');
+              setShowDLS(false);
+              
+              // Add a small delay to check if states actually changed
+              setTimeout(() => {
+                console.log('State after 100ms:');
+                console.log('- showCaseCompletionModal should be true');
+                console.log('- showDLS should be false');
+              }, 100);
+              
+              console.log('=== END BUTTON CLICK COMPLETE ===');
+            }}
+        className={getButtonClass('dls-1st-end-s3', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
+        >
+        End → Case completed, confirm to save the case?
+        </button>
                 </div>
               </div>
             </div>
@@ -1882,11 +2178,15 @@ export default function EntryPage() {
                     Stay on Line → 3
                   </button>
                   <button 
-                    onClick={() => handleButtonClick('dls-2nd-end', handleDlsEnd)} 
-                    className={getButtonClass('dls-2nd-end', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
-                  >
-                    End → Case completed, confirm to save the case?
-                  </button>
+          onClick={() => {
+            handleButtonClick('dls-2nd-end', () => {});
+            setShowCaseCompletionModal(true);
+            setShowDLS(false);
+          }} 
+          className={getButtonClass('dls-2nd-end', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
+        >
+          End → Case completed, confirm to save the case?
+        </button>
                 </div>
               </div>
             </div>
@@ -1906,7 +2206,10 @@ export default function EntryPage() {
                 
                 <div className="space-y-2">
                   <button 
-                    onClick={() => handleButtonClick('dls-2nd-end-s3', handleDlsEnd)} 
+                    onClick={() => {
+                      handleButtonClick('dls-2nd-end-s3', () => {});
+                      handleDlsEnd();
+                    }} 
                     className={getButtonClass('dls-2nd-end-s3', "block w-full text-left px-4 py-2 bg-green-100 text-black border border-green-400 rounded hover:bg-green-200")}
                   >
                     End → Case completed, confirm to save the case?
@@ -2883,271 +3186,41 @@ export default function EntryPage() {
               </div>
             )}
 
-            {/* Case Completion Modal */}
-        {/* Case Completion Modal */}
-        {showCaseCompletionModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 ">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-              <h3 className="text-lg font-bold mb-4 text-black">Case Completion</h3>
-              <p className="text-gray-700 mb-6">
-                <span className="font-bold text-green-600">Case completed!</span>
-                <br /><br />
-                Confirm to save the case?
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => {
-                    setShowCaseCompletionModal(false);
-                    setShowDLS(true); // Return to DLS if cancelled
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmCaseCompletion}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold"
-                >
-                  Save & Close Case
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-            {/* Confirm Summary Modal */}
+
+            {/* Confirm Save & Return to Dashboard Modal */}
             {showConfirmSummaryModal && (
-              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-                  <h3 className="text-xl font-bold mb-4 text-black text-center">Confirm to Summary?</h3>
+              <div 
+                className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-75" 
+                style={{ zIndex: 99999 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div 
+                  className="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-4 border-blue-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="text-xl font-bold mb-4 text-black text-center">Save & Return to Dashboard</h3>
                   <p className="text-gray-700 mb-6 text-center">
-                    Case closed and saved Would you like to view the case summary ?
+                    Are you sure you want to save this case and return to the dashboard?
                   </p>
                   <div className="flex justify-center space-x-4">
                     <button
-                      onClick={confirmToSummary}
-                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium"
+                      onClick={() => {
+                        console.log('Yes Save & Return button clicked!');
+                        handleSaveAndReturn();
+                      }}
+                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium shadow-lg"
                     >
-                      Yes, Show Summary
+                      Yes, Save & Return
                     </button>
                     <button
-                      onClick={() => setShowConfirmSummaryModal(false)}
-                      className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
+                      onClick={() => {
+                        console.log('Cancel button clicked!');
+                        setShowConfirmSummaryModal(false);
+                      }}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium shadow-lg"
                     >
                       Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Case Summary Modal */}
-            {showSummaryModal && (
-              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                  <h3 className="text-2xl font-bold mb-6 text-black text-center">Case Summary</h3>
-                  
-                  {/* Case Information Section */}
-                  <div className="mb-6 bg-gray-50 p-4 rounded border">
-                    <h4 className="text-lg font-bold mb-3 text-black">Case Information</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm text-black">
-                      <div><strong>Case Number:</strong> {/* Generate case number */}2024001</div>
-                      <div><strong>Date/Time:</strong> {new Date().toLocaleString()}</div>
-                      <div><strong>Location:</strong> {formData.location || 'Not specified'}</div>
-                      <div><strong>Phone Number:</strong> {formData.phoneNumber || 'Not specified'}</div>
-                      <div><strong>Problem:</strong> {formData.problem || 'Not specified'}</div>
-                      <div><strong>Dispatcher:</strong> SUPERVISOR (John Supervisor)</div>
-                    </div>
-                  </div>
-
-                  {/* Timeline Summary with Timestamps */}
-                  <div className="mb-6 bg-blue-50 p-4 rounded border">
-                    <h4 className="text-lg font-bold mb-3 text-black">Case Summary</h4>
-                    <div className="space-y-4">
-                      {/* Case Entry Started */}
-                      <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
-                        <div className="flex flex-col items-center">
-                          <div className="text-3xl font-mono font-bold text-black leading-none">
-                            {new Date(Date.now() - 600000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 mt-1">
-                            {new Date(Date.now() - 600000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-black text-lg">Case Entry Started</div>
-                          <div className="text-sm text-black mt-1">Initial case information collected</div>
-                        </div>
-                      </div>
-                      
-                      {/* Key Questions Completed */}
-                      <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
-                        <div className="flex flex-col items-center">
-                          <div className="text-3xl font-mono font-bold text-black leading-none">
-                            {new Date(Date.now() - 480000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 mt-1">
-                            {new Date(Date.now() - 480000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-red-600 text-lg">Key Questions Completed</div>
-                          <div className="text-sm text-black mt-1">
-                            <span className="font-bold text-red-600">Protocol 6 - Breathing Problems</span>
-                            <br />• Q1: Patient alert status - <span className="font-bold">{kqAnswers.question1 || 'Not answered'}</span>
-                            {kqAnswers.question2 && <><br />• Q2: Difficulty speaking - <span className="font-bold text-red-600">{kqAnswers.question2}</span></>}
-                            {kqAnswers.question3 && <><br />• Q3: Changing color - <span className="font-bold text-red-600">{kqAnswers.question3}</span></>}
-                            {kqAnswers.question4 && <><br />• Q4: Clammy/cold sweats - <span className="font-bold">{kqAnswers.question4}</span></>}
-                            {kqAnswers.question5 && <><br />• Q5: Asthma/lung problems - <span className="font-bold">{kqAnswers.question5}</span></>}
-                            {kqAnswers.question6 && <><br />• Q6: Special equipment - <span className="font-bold">{kqAnswers.question6}</span></>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dispatch Determination */}
-                      {selectedDeterminant && (
-                        <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
-                          <div className="flex flex-col items-center">
-                            <div className="text-3xl font-mono font-bold text-red-600 leading-none">
-                              {new Date(Date.now() - 420000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                            </div>
-                            <div className="text-xs font-mono text-gray-600 mt-1">
-                              {new Date(Date.now() - 420000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-bold text-red-600 text-lg">DISPATCH DETERMINATION</div>
-                            <div className="text-sm text-black mt-1">
-                              Determinant: <span className="font-bold text-red-700 bg-red-100 px-2 py-1 rounded">{selectedDeterminant}</span>
-                              <br />Ambulances dispatched: <span className="font-bold text-red-600">{selectedAmbulances.join(', ') || 'None'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Post-Dispatch Instructions */}
-                      <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
-                        <div className="flex flex-col items-center">
-                          <div className="text-3xl font-mono font-bold text-black leading-none">
-                            {new Date(Date.now() - 360000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 mt-1">
-                            {new Date(Date.now() - 360000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-black text-lg">Post-Dispatch Instructions</div>
-                          <div className="text-sm text-black mt-1">
-                            PDI instructions provided to caller
-                            <br />• <span className="font-bold text-red-600">Ambulance dispatch confirmed</span>
-                            • Instructions given for breathing problems
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dispatch Life Support */}
-                      <div className="flex items-start gap-4 pb-3 border-b border-gray-200">
-                        <div className="flex flex-col items-center">
-                          <div className="text-3xl font-mono font-bold text-black leading-none">
-                            {new Date(Date.now() - 180000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 mt-1">
-                            {new Date(Date.now() - 180000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-black text-lg">Dispatch Life Support</div>
-                          <div className="text-sm text-black mt-1">
-                            DLS instructions completed
-                            <br />• {dlsCallerType === '1st' ? '1st Party' : dlsCallerType === '2nd' ? '2nd Party' : 'Standard'} caller protocol followed
-                            • Case monitoring until arrival
-                          </div> 
-                        </div>
-                      </div>
-
-                      {/* Case Completed */}
-                      <div className="flex items-start gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="text-3xl font-mono font-bold text-black leading-none">
-                            {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </div>
-                          <div className="text-xs font-mono text-gray-600 mt-1">
-                            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-green-600 text-lg">CASE COMPLETED</div>
-                          <div className="text-sm text-black mt-1">All protocols completed successfully</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Key Metrics */}
-                  <div className="mb-6 bg-yellow-50 p-4 rounded border">
-                    <h4 className="text-lg font-bold mb-3 text-black">Key Metrics</h4>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">10:00</div>
-                        <div className="text-sm text-black">Total Case Time</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">2:30</div>
-                        <div className="text-sm text-black">Time to Dispatch</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-purple-600">{selectedAmbulances.length || 0}</div>
-                        <div className="text-sm text-black">Units Dispatched</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main Points Highlighted */}
-                  <div className="mb-6 bg-red-50 p-4 rounded border border-red-200">
-                    <h4 className="text-lg font-bold mb-3 text-red-800">Critical Points Summary</h4>
-                    <ul className="space-y-2 text-sm text-black">
-                      {kqAnswers.question1 === 'no' && (
-                        <li className="flex items-center">
-                          <span className="text-red-600 mr-2">⚠️</span>
-                          <span className="text-black"><strong>CRITICAL:</strong> Patient not alert - Immediate dispatch required</span>
-                        </li>
-                      )}
-                      {kqAnswers.question2 === 'yes' && (
-                        <li className="flex items-center">
-                          <span className="text-orange-600 mr-2">⚠️</span>
-                          <span className="text-black"><strong>HIGH PRIORITY:</strong> Difficulty speaking between breaths</span>
-                        </li>
-                      )}
-                      {kqAnswers.question3 === 'yes' && (
-                        <li className="flex items-center">
-                          <span className="text-orange-600 mr-2">⚠️</span>
-                          <span className="text-black"><strong>HIGH PRIORITY:</strong> Patient changing color</span>
-                        </li>
-                      )}
-                      {selectedDeterminant && (
-                        <li className="flex items-center">
-                          <span className="text-red-600 mr-2">🚨</span>
-                          <span className="text-black"><strong>DISPATCH LEVEL:</strong> {selectedDeterminant} - {selectedDeterminant.includes('E') ? 'ECHO (Highest Priority)' : selectedDeterminant.includes('D') ? 'DELTA (High Priority)' : selectedDeterminant.includes('C') ? 'CHARLIE (Medium Priority)' : 'Standard Priority'}</span>
-                        </li>
-                      )}
-                      <li className="flex items-center">
-                        <span className="text-green-600 mr-2">✅</span>
-                        <span className="text-black"><strong>PROTOCOL COMPLETE:</strong> All required instructions provided to caller</span>
-                      </li>
-                      <li className="flex items-center">
-                        <span className="text-blue-600 mr-2">📋</span>
-                        <span className="text-black"><strong>DOCUMENTATION:</strong> Case fully documented with timestamps</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={handleSaveAndReturn}
-                      className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-lg shadow-lg"
-                    >
-                      Save Case & Return to Dashboard
                     </button>
                   </div>
                 </div>
@@ -3346,24 +3419,19 @@ export default function EntryPage() {
                         value={formData.problem}
                         onChange={(e) => {
                           handleChange(e);
-                          // Show breathing instructions if input contains 'breath' or 'breathing'
-                          const infoBox = document.getElementById('breathing-info');
-                          if (!infoBox) return;
-                          
-                          const showBreathingInfo = e.target.value.toLowerCase().match(/breath(ing)?/);
-                          infoBox.style.display = showBreathingInfo ? 'block' : 'none';
+                          // Mark field as interacted with
+                          setFieldInteractions(prev => ({ ...prev, problem: true }));
                         }}
                         name="problem"
                         list="problem-suggestions"
                         className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
                       />
                     </div>
-                    <div id="breathing-info" className="hidden">
+                    {fieldInteractions.problem && formData.problem.toLowerCase().match(/breath(ing)?/) && (
                       <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
                         <button 
                           onClick={() => {
-                            const infoBox = document.getElementById('breathing-info');
-                            if (infoBox) infoBox.style.display = 'none';
+                            setFieldInteractions(prev => ({ ...prev, problem: false }));
                           }}
                           className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
                         >
@@ -3375,7 +3443,7 @@ export default function EntryPage() {
                         <p className="text-sm text-blue-900">Then tell the caller: "<span className="font-bold">Do not slap</span> her/him on the back."</p>
                         <p className="text-sm text-blue-900 mt-2">For <span className="font-bold">NOT BREATHING</span> or <span className="font-bold">INEFFECTIVE/AGONAL BREATHING</span>, code as <span className="font-bold">ECHO</span> on <span className="font-bold">Protocols 2, 6, 9, 11, 15, 31</span> only dispatch, give PDIs, and <span className="font-bold">return to</span> question sequence.</p>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <datalist id="problem-suggestions">
                     <option value="Hanging (now)" />
@@ -3394,9 +3462,7 @@ export default function EntryPage() {
                       value={formData.withPatient}
                       onChange={(e) => {
                         handleChange(e);
-                        // Show info box when selection changes
-                        const infoBox = e.target.parentElement?.nextElementSibling as HTMLElement;
-                        if (infoBox) infoBox.style.display = 'block';
+                        setFieldInteractions(prev => ({ ...prev, withPatient: true }));
                       }}
                       name="withPatient"
                       className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
@@ -3407,25 +3473,26 @@ export default function EntryPage() {
                       <option value="Forth (4th) party">Forth (4th) party</option>
                     </select>
                   </div>
-                  <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
-                    <button 
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                      className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <p className="text-sm text-blue-900">
-                      Ask only if <span className="font-bold">not</span> obvious.
-                    </p>
-                    <p className="text-sm text-blue-900">
-                      <span className="font-bold">4th party</span> = referring agency such as police, airport, or other professional comm. center.
-                    </p>
-                  </div>
+                  {fieldInteractions.withPatient && (
+                    <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
+                      <button 
+                        onClick={() => {
+                          setFieldInteractions(prev => ({ ...prev, withPatient: false }));
+                        }}
+                        className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-blue-900">
+                        Ask only if <span className="font-bold">not</span> obvious.
+                      </p>
+                      <p className="text-sm text-blue-900">
+                        <span className="font-bold">4th party</span> = referring agency such as police, airport, or other professional comm. center.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-black font-medium">The number of people hurt or sick:</div>
@@ -3436,30 +3503,29 @@ export default function EntryPage() {
                       value={formData.numHurt}
                       onChange={(e) => {
                         handleChange(e);
-                        // Show info box when value changes
-                        const infoBox = e.target.parentElement?.nextElementSibling as HTMLElement;
-                        if (infoBox) infoBox.style.display = 'block';
+                        setFieldInteractions(prev => ({ ...prev, numHurt: true }));
                       }}
                       name="numHurt"
                       className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
                     />
                   </div>
-                  <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
-                    <button 
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                      className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <p className="text-sm text-blue-900">
-                      The <span className="font-bold">number</span> of people <span className="font-bold">injured</span> or <span className="font-bold">sick</span>. More than one <span className="font-bold">serious</span> patient will trigger a <span className="font-bold">DELTA</span> response on Protocols <span className="font-bold">4, 7, 8, 14, 15, 20, 22, 27, 29, 32</span>
-                    </p>
-                  </div>
+                  {fieldInteractions.numHurt && (
+                    <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
+                      <button 
+                        onClick={() => {
+                          setFieldInteractions(prev => ({ ...prev, numHurt: false }));
+                        }}
+                        className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-blue-900">
+                        The <span className="font-bold">number</span> of people <span className="font-bold">injured</span> or <span className="font-bold">sick</span>. More than one <span className="font-bold">serious</span> patient will trigger a <span className="font-bold">DELTA</span> response on Protocols <span className="font-bold">4, 7, 8, 14, 15, 20, 22, 27, 29, 32</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-black font-medium">How old is the patient?</div>
@@ -3470,33 +3536,32 @@ export default function EntryPage() {
                       value={formData.age}
                       onChange={(e) => {
                         handleChange(e);
-                        // Show info box when value changes
-                        const infoBox = e.target.parentElement?.nextElementSibling as HTMLElement;
-                        if (infoBox) infoBox.style.display = 'block';
+                        setFieldInteractions(prev => ({ ...prev, age: true }));
                       }}
                       name="age"
                       className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
                     />
                   </div>
-                  <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
-                    <button 
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                      className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <p className="text-sm text-blue-900">
-                      The <span className="font-bold">closest age</span> (even if approximate) <span className="font-bold">must</span> be entered.
-                    </p>
-                    <p className="text-sm text-blue-900 mt-2">
-                      (<span className="font-bold">Unsure</span>) Tell me <span className="font-bold">approximately</span>, then
-                    </p>
-                  </div>
+                  {fieldInteractions.age && (
+                    <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
+                      <button 
+                        onClick={() => {
+                          setFieldInteractions(prev => ({ ...prev, age: false }));
+                        }}
+                        className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-blue-900">
+                        The <span className="font-bold">closest age</span> (even if approximate) <span className="font-bold">must</span> be entered.
+                      </p>
+                      <p className="text-sm text-blue-900 mt-2">
+                        (<span className="font-bold">Unsure</span>) Tell me <span className="font-bold">approximately</span>, then
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-black font-medium">The patient's gender is:</div>
@@ -3518,9 +3583,7 @@ export default function EntryPage() {
                       value={formData.conscious}
                       onChange={(e) => {
                         handleChange(e);
-                        // Show info box when selection changes
-                        const infoBox = e.target.parentElement?.nextElementSibling as HTMLElement;
-                        if (infoBox) infoBox.style.display = 'block';
+                        setFieldInteractions(prev => ({ ...prev, conscious: true }));
                       }}
                       name="conscious"
                       className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
@@ -3531,22 +3594,23 @@ export default function EntryPage() {
                       <option value="Unknown">Unknown</option>
                     </select>
                   </div>
-                  <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
-                    <button 
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                      className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <p className="text-sm text-blue-900">
-                      If <span className="font-bold">consciousness is unknown</span>, immediately <span className="font-bold">verify</span> whether the <span className="font-bold">patient is breathing</span>.
-                    </p>
-                  </div>
+                  {fieldInteractions.conscious && (
+                    <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
+                      <button 
+                        onClick={() => {
+                          setFieldInteractions(prev => ({ ...prev, conscious: false }));
+                        }}
+                        className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-blue-900">
+                        If <span className="font-bold">consciousness is unknown</span>, immediately <span className="font-bold">verify</span> whether the <span className="font-bold">patient is breathing</span>.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-black font-medium">Is patient breathing?</div>
@@ -3556,9 +3620,7 @@ export default function EntryPage() {
                       value={formData.breathing}
                       onChange={(e) => {
                         handleChange(e);
-                        // Show info box when selection changes
-                        const infoBox = e.target.parentElement?.nextElementSibling as HTMLElement;
-                        if (infoBox) infoBox.style.display = 'block';
+                        setFieldInteractions(prev => ({ ...prev, breathing: true }));
                       }}
                       name="breathing"
                       className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
@@ -3571,25 +3633,26 @@ export default function EntryPage() {
                       <option value="INEFFECTIVE/AGONAL">INEFFECTIVE/AGONAL</option>
                     </select>
                   </div>
-                  <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
-                    <button 
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                      className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    <p className="text-sm text-blue-900">
-                      <span className="font-bold">Hasn't checked</span>: Ask, "You go check and tell me what you find."
-                    </p>
-                    <p className="text-sm text-blue-900 mt-2">
-                      <span className="font-bold">Uncertain</span>: a 2nd party caller who is unsure. <span className="font-bold">Unknown</span>: a 3rd or 4th party caller who doesn't know. Select <span className="font-bold">INEFFECTIVE</span> when unconscious and breathing is irregular or very slow, or <span className="font-bold">AGONAL</span> when the time between breaths is 10 seconds or more.
-                    </p>
-                  </div>
+                  {fieldInteractions.breathing && (
+                    <div className="bg-blue-50 border border-blue-300 rounded p-3 ml-2 w-[300px] relative">
+                      <button 
+                        onClick={() => {
+                          setFieldInteractions(prev => ({ ...prev, breathing: false }));
+                        }}
+                        className="absolute top-2 right-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-blue-900">
+                        <span className="font-bold">Hasn't checked</span>: Ask, "You go check and tell me what you find."
+                      </p>
+                      <p className="text-sm text-blue-900 mt-2">
+                        <span className="font-bold">Uncertain</span>: a 2nd party caller who is unsure. <span className="font-bold">Unknown</span>: a 3rd or 4th party caller who doesn't know. Select <span className="font-bold">INEFFECTIVE</span> when unconscious and breathing is irregular or very slow, or <span className="font-bold">AGONAL</span> when the time between breaths is 10 seconds or more.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-black font-medium">Chief Complaint is:</div>
@@ -3970,38 +4033,45 @@ export default function EntryPage() {
         )}
 
         {/* Ambulance Dispatch Confirmation Modal */}
-        {showAmbulanceConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 className="text-xl font-bold text-black mb-4">Confirm Ambulance Dispatch</h2>
-              <div className="mb-4 text-black">
-                <p><strong>Determinant:</strong> {selectedDeterminant}</p>
-                <p><strong>Number of patients:</strong> {parseInt(formData.numHurt) || 0}</p>
-                <p><strong>Selected ambulances:</strong></p>
-                <ul className="ml-4 list-disc">
+      {showAmbulanceConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 border-2 border-black">
+            <h2 className="text-xl font-bold mb-4 text-black">Confirm Ambulance Dispatch</h2>
+            <div className="space-y-3 mb-6 text-black">
+              <div>
+                <span className="font-medium">Determinant: </span>
+                {selectedDeterminant}
+              </div>
+              <div>
+                <span className="font-medium">Number of patients: </span>
+                {parseInt(formData.numHurt) || 0}
+              </div>
+              <div>
+                <span className="font-medium">Selected ambulances:</span>
+                <ul className="mt-2">
                   {selectedAmbulances.map(amb => (
-                    <li key={amb}>{amb}</li>
+                    <li key={amb} className="ml-4">• {amb}</li>
                   ))}
                 </ul>
               </div>
-              <div className="flex justify-between">
-                <button
-                  onClick={() => setShowAmbulanceConfirm(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmAmbulanceDispatch}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
-                >
-                  CONFIRM DISPATCH
-                </button>
-              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setShowAmbulanceConfirm(false)} 
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmAmbulanceDispatch}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                CONFIRM DISPATCH
+              </button>
             </div>
           </div>
-        )}
-
+        </div>
+      )}
         {/* Dispatching Indicator - MOVED OUTSIDE THE MODAL */}
         {isDispatching && (
           <div className="fixed top-4 left-4 bg-red-600 text-white p-4 rounded-lg shadow-lg z-[60]">
@@ -4033,6 +4103,72 @@ export default function EntryPage() {
             </div>
           </div>
         )}
+
+
+
+        {/* Case Completion to Timeline Summary Modal */}
+        {showCaseCompletionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-bold mb-4 text-black">Case Completion</h3>
+              <p className="text-gray-700 mb-6">
+                <span className="font-bold text-green-600">Case completed!</span>
+                <br /><br />
+                Confirm to view the timeline summary?
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    console.log('❌ Cancel clicked');
+                    setShowCaseCompletionModal(false);
+                    setShowDLS(true);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmCaseCompletion}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold"
+                >
+                  View Timeline Summary
+                </button>
+              </div>
             </div>
-          );
-        }
+          </div>
+        )}
+
+        {/* Confirm Save & Return to Dashboard Modal */}
+        {showConfirmSummaryModal && (
+          <div 
+            className="fixed top-0 left-0 w-screen h-screen flex items-center justify-center" 
+            style={{ zIndex: 999999 }}
+          >
+            <div 
+              className="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-4 text-black text-center">Save & Return to Dashboard</h3>
+              <p className="text-gray-700 mb-6 text-center">
+                Are you sure you want to save this case and return to the dashboard?
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={handleSaveAndReturn}
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium"
+                >
+                  Yes, Save & Return
+                </button>
+                <button
+                  onClick={() => setShowConfirmSummaryModal(false)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </div>
+  );
+}
