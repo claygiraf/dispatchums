@@ -1,4 +1,4 @@
-# DispatchUMS - Smart Emergency Dispatch System
+# DISPATCHUMS MEDICAL PRIORITY DISPATCH SYSTEM
 
 A medical priority dispatch system that streamlines case management, resource allocation, determinant codes and emergency response coordination between dispatchers, admins and responders.
 
@@ -15,13 +15,10 @@ A medical priority dispatch system that streamlines case management, resource al
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
 - [Database Management](#database-management)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## 🎯 Overview
 
-DispatchUMS is a modern, full-stack emergency dispatch system designed to help emergency services manage cases efficiently. The system provides real-time case tracking, admin management, call card display, and comprehensive feedback testimonial features.
+DISPATCHUMShUMS is a modern, full-stack medical priority dispatch system designed to help emergency services manage cases efficiently. The system provides real-time case tracking, admin management, call card display, and chatbox feedback testimonial features.
 
 ## ✨ Features
 
@@ -42,6 +39,7 @@ DispatchUMS is a modern, full-stack emergency dispatch system designed to help e
 - PDF export functionality
 - Timeline tracking for cases
 - Work info management
+- Haversine Formula for shortest distance
 
 ## 🛠 Technology Stack
 
@@ -81,7 +79,7 @@ DispatchUMS is a modern, full-stack emergency dispatch system designed to help e
 ## 📁 Project Structure
 
 ```
-BI22110013_SOURCECODE_KP44104/
+dispatchums
 ├── frontend/                      # Next.js frontend application
 │   ├── app/                       # App directory (Next.js 13+ App Router)
 │   │   ├── dashboard/            # Dashboard pages
@@ -392,65 +390,6 @@ python reset_admin_password.py
 python setup_test_users.py
 ```
 
-## 🚢 Deployment
-
-### Frontend Deployment (Vercel Recommended)
-
-1. Connect your GitHub repository to Vercel
-2. Configure build settings:
-   - Build Command: `cd frontend && npm run build`
-   - Output Directory: `frontend/.next`
-   - Install Command: `cd frontend && npm install`
-3. Add environment variables if needed
-4. Deploy
-
-### Backend Deployment
-
-#### Using Docker (Recommended)
-
-Create a `Dockerfile` in `my-fastapi-backend`:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-Build and run:
-```bash
-docker build -t dispatchums-backend .
-docker run -p 8000:8000 dispatchums-backend
-```
-
-#### Using a VPS
-
-1. Install Python 3.8+ on your server
-2. Clone the repository
-3. Install dependencies: `pip install -r requirements.txt`
-4. Set up environment variables
-5. Use a process manager like `systemd` or `supervisor`
-6. Configure nginx as a reverse proxy
-7. Set up SSL with Let's Encrypt
-
-### Database for Production
-
-For production, switch to PostgreSQL:
-
-1. Install PostgreSQL
-2. Create a database
-3. Update `DATABASE_URL` in `.env`:
-   ```
-   DATABASE_URL=postgresql://username:password@localhost/dispatchums
-   ```
-4. Run migrations
-
 ## 👥 User Roles
 
 The system supports multiple user roles:
@@ -470,4 +409,5 @@ The system supports multiple user roles:
 
 ## 🤝 Contributing
 
-This is an academic project for course KP44104. For questions or issues, please contact the project author.
+This is an academic project under MIT license.
+
