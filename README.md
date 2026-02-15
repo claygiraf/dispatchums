@@ -18,7 +18,7 @@ A medical priority dispatch system that streamlines case management, resource al
 
 ## 🎯 Overview
 
-DISPATCHUMShUMS is a modern, full-stack medical priority dispatch system designed to help emergency services manage cases efficiently. The system provides real-time case tracking, admin management, call card display, and chatbox feedback testimonial features.
+DISPATCHUMS is a modern, full-stack medical priority dispatch system designed to help emergency services manage cases efficiently. The system provides real-time case tracking, admin management, call card display, and chatbox feedback testimonial features.
 
 ## ✨ Features
 
@@ -410,4 +410,5 @@ The system supports multiple user roles:
 ## 🤝 Contributing
 
 This is an academic project under MIT license.
+
 
