@@ -1,0 +1,295 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+export default function EntryPage() {
+  // Navigation state
+  const [activeTab, setActiveTab] = useState('Entry');
+  const [activeSubTab, setActiveSubTab] = useState('Case Entry');
+  const [hintsEnabled, setHintsEnabled] = useState(true);
+  const [sortChiefComplaints, setSortChiefComplaints] = useState(false);
+  
+  // Timer and Progress State
+  const [elapsed, setElapsed] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Format elapsed time as mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Auto-start timer on component mount
+  useEffect(() => {
+    setIsTimerRunning(true);
+  }, []);
+
+  // Timer Effect
+  useEffect(() => {
+    if (!isTimerRunning) return;
+
+    const timer = setInterval(() => {
+      setElapsed(prev => {
+        const newElapsed = prev + 1;
+        // Update progress every second (assuming we want to show progress for first 60 seconds)
+        setProgress(Math.min((newElapsed / 60) * 100, 100));
+        return newElapsed;
+      });
+    }, 1000);
+
+    // Cleanup function
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isTimerRunning]);
+
+  // Profile and Language settings
+  const [username, setUsername] = useState('SUPERVISOR');
+  const [fullName, setFullName] = useState('John Supervisor');
+  const [caseNumber, setCaseNumber] = useState('2000005541');
+  const [selectedOperatorLanguage, setSelectedOperatorLanguage] = useState('ENGLISH');
+  const [selectedCallerLanguage, setSelectedCallerLanguage] = useState('ENGLISH');
+  const [tempOperatorLanguage, setTempOperatorLanguage] = useState('ENGLISH');
+  const [tempCallerLanguage, setTempCallerLanguage] = useState('ENGLISH');
+  const [showLanguageApplyConfirm, setShowLanguageApplyConfirm] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    location: '2585 E 16th St',
+    phoneNumber: '555-5555',
+    problem: 'Having a baby, heads out',
+    withPatient: 'Yes',
+    numHurt: '1',
+    age: '',
+    gender: '',
+    conscious: '',
+    breathing: '',
+    chiefComplaint: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Start timer on first form input
+    setElapsed(0);
+    setProgress(0);
+    setIsTimerRunning(true);
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Timer and Loading Bar */}
+      <div className="bg-[#1a1a1a] border-t border-b border-gray-700">
+        <div className="flex items-center justify-between px-2 py-3">
+          <div className="text-white font-mono text-lg pl-1">{formatTime(elapsed)}</div>
+          <div className="flex-1 flex justify-center px-4">
+            <div className="w-1/2 max-w-lg h-3 bg-gray-700 rounded-full overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-full">
+                <div className="h-full bg-[#1D9BF0] animate-loading-wave"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation Tabs */}
+      <div className="bg-[#C0C0C0] border-b border-gray-500">
+        <div className="flex w-full">
+          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 ${
+                tab === activeTab 
+                  ? 'bg-white text-black font-medium' 
+                  : 'text-black hover:bg-gray-300 transition'
+              } border-r border-gray-500`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sub Tabs */}
+      <div className="flex">
+        {['Case Entry', 'Additional Information'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveSubTab(tab)}
+            className={`py-2 px-4 text-black ${
+              tab === activeSubTab 
+                ? 'bg-[#C0C0C0] font-medium' 
+                : 'hover:bg-gray-300 transition'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 bg-[#D3D3D3]">
+        <div className="max-w-4xl mx-auto py-2 px-6">
+          {activeTab === 'Entry' && (
+            <div className="space-y-1">
+              <div className="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-1 items-center">
+                <div className="text-left text-black">The location is:</div>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={handleChange}
+                  name="location"
+                  className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+                />
+
+              <div className="text-right text-black">The phone number is:</div>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                name="phoneNumber"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">The problem is:</div>
+              <input
+                type="text"
+                value={formData.problem}
+                onChange={handleChange}
+                name="problem"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">With the patient now:</div>
+              <input
+                type="text"
+                value={formData.withPatient}
+                onChange={handleChange}
+                name="withPatient"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">The number of hurt (sick) is:</div>
+              <input
+                type="text"
+                value={formData.numHurt}
+                onChange={handleChange}
+                name="numHurt"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">How old is the patient?</div>
+              <div className="flex items-start gap-4">
+                <input
+                  type="text"
+                  value={formData.age}
+                  onChange={handleChange}
+                  name="age"
+                  className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-1/3"
+                />
+                <div className="text-blue-700 text-sm">
+                  The <b>closest age</b> (even if approximate) <b>must</b> be entered.
+                  <div><b>(Unsure)</b> Tell me <b>approximately</b>, then.</div>
+                </div>
+              </div>
+
+              <div className="text-right text-black">The patient's gender is:</div>
+              <input
+                type="text"
+                value={formData.gender}
+                onChange={handleChange}
+                name="gender"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">Is he/she awake (conscious)?</div>
+              <input
+                type="text"
+                value={formData.conscious}
+                onChange={handleChange}
+                name="conscious"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">Is he/she breathing?</div>
+              <input
+                type="text"
+                value={formData.breathing}
+                onChange={handleChange}
+                name="breathing"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+
+              <div className="text-right text-black">The Chief Complaint is:</div>
+              <input
+                type="text"
+                value={formData.chiefComplaint}
+                onChange={handleChange}
+                name="chiefComplaint"
+                className="border border-gray-400 px-1 py-0.5 h-7 bg-white text-black w-full"
+              />
+            </div>
+          </div>
+          </div>
+          
+          <div className="mt-8 p-2 bg-pink-200 text-center text-black">
+            Critical Caller Danger Instructions
+          </div>
+        </div>
+      </div>
+
+      {/* Three Column Layout - Bottom Section */}
+      <div className="bg-[#27272A] border-t border-[#27272A] flex mt-auto">
+        {/* Left Column - User Info & Case Number */}
+        <div className="w-1/4 border-r border-gray-600 p-3">
+          <div className="space-y-2">
+            {/* User Name */}
+            <div className="text-white">
+              <div className="text-base font-semibold">{username}</div>
+              <div className="text-base text-gray-400">{fullName}</div>
+            </div>
+            
+            {/* Case Number */}
+            <div className="text-white">
+              <div className="text-base font-semibold text-gray-500">
+                {caseNumber ? caseNumber : 'No case number'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Column - O & C Settings */}
+        <div className="w-1/4 border-r border-gray-600 p-3">
+          <div className="space-y-1">
+            <div className="text-white">
+              <div className="text-base text-gray-400">O: {selectedOperatorLanguage}</div>
+              <div className="text-base text-gray-400">C: {selectedCallerLanguage}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Case Information */}
+        <div className="w-1/2 p-3">
+          <div className="text-white">
+            {caseNumber ? (
+              <div className="space-y-1">
+                <div className="text-base text-gray-400">Case Information</div>
+                <div className="text-base font-semibold">Case #{caseNumber}</div>
+              </div>
+            ) : (
+              <div className="text-base text-gray-500">No active case</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

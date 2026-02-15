@@ -1,0 +1,91 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+export default function AdminFeedbackPage() {
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAllFeedbacks();
+  }, []);
+
+  const fetchAllFeedbacks = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const response = await fetch('http://127.0.0.1:8001/api/v1/feedback/all', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFeedbacks(data);
+      }
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+    }
+  };
+
+  const updateStatus = async (id: number, status: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://127.0.0.1:8001/api/v1/feedback/${id}/status?status=${status}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) fetchAllFeedbacks();
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0A]">
+      <nav className="bg-black border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/dashboard/admin" className="text-white font-serif text-2xl tracking-wide hover:text-[#1D9BF0] transition">DISPATCHUMS</Link>
+            <div className="flex items-center gap-8">
+              <Link href="/dashboard/admin" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Dashboard</Link>
+              <Link href="/dashboard/admin/users" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Users</Link>
+              <Link href="/dashboard/admin/design" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Design</Link>
+              <Link href="/dashboard/admin/feedback" className="text-[#1D9BF0] transition font-medium text-lg">Feedback</Link>
+              <Link href="/dashboard/admin/testimonial" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Testimonial</Link>
+              <Link href="/dashboard/admin/trash" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Trash</Link>
+            </div>
+            <Link href="/profile" className="text-white hover:text-[#1D9BF0] transition font-medium text-lg">Profile</Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h1 className="text-3xl font-bold text-white mb-6">All User Feedback</h1>
+        <div className="bg-white rounded-lg shadow-lg p-6 space-y-4">
+          {feedbacks.map(feedback => (
+            <div key={feedback.id} className="border rounded-lg p-4">
+              <div className="flex justify-between">
+                <div>
+                  <h3 className="font-bold">{feedback.subject}</h3>
+                  <p className="text-sm text-gray-600">From: {feedback.username} ({feedback.email})</p>
+                  <p className="mt-2">{feedback.message}</p>
+                  <p className="text-xs text-gray-500 mt-2">{new Date(feedback.created_at).toLocaleString()}</p>
+                </div>
+                <select
+                  value={feedback.status}
+                  onChange={(e) => updateStatus(feedback.id, e.target.value)}
+                  className="h-10 border rounded px-2"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

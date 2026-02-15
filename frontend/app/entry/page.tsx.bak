@@ -1,0 +1,1355 @@
+'use client';'use client';'use client';
+
+
+
+import { useState, useEffect } from 'react';
+
+import EntryNavigation from '@/components/shared/EntryNavigation';
+
+import { useState, useEffect } from 'react';import { useState, useEffect } from 'react';
+
+type TabType = 'Entry' | 'KQ' | 'PDI/CEI' | 'DLS' | 'Summary';
+
+import EntryNavigation from '@/components/shared/EntryNavigation';import EntryNavigation from '@/components/shared/EntryNavigation';
+
+// Protocol data
+
+const protocols = [
+
+  { id: '1', name: 'Abdominal Pain/Problems' },
+
+  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },type TabType = 'Entry' | 'KQ' | 'PDI/CEI' | 'DLS' | 'Summary';// Protocol data
+
+  { id: '3', name: 'Animal Bites/Attacks' },
+
+  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },const protocols = [
+
+  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },
+
+  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },// Protocol data  { id: '1', name: 'Abdominal Pain/Problems' },
+
+  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },
+
+  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },const protocols = [  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },
+
+  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },
+
+  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' }  { id: '1', name: 'Abdominal Pain/Problems' },  { id: '3', name: 'Animal Bites/Attacks' },
+
+];
+
+  { id: '2', name: 'Allergies (Reactions)/Envenomations (Stings, Bites)' },  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },
+
+export default function EntryPage() {
+
+  const [elapsed, setElapsed] = useState(0);  { id: '3', name: 'Animal Bites/Attacks' },  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },
+
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+  const [progress, setProgress] = useState(0);  { id: '4', name: 'Assault/Sexual Assault/Stun Gun' },  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },
+
+  const [activeTab, setActiveTab] = useState<TabType>('Entry');
+
+  const [activeSubTab, setActiveSubTab] = useState('Case Entry');  { id: '5', name: 'Back Pain (Non-Traumatic or Non-Recent Trauma)' },  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },
+
+  const [caseNumber, setCaseNumber] = useState('2000005541');
+
+  const [filteredProtocols, setFilteredProtocols] = useState<typeof protocols>([]);  { id: '6', name: 'Breathing Problems/Inhalation/HazMat/CBRN' },  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },
+
+
+
+  const [formData, setFormData] = useState({  { id: '7', name: 'Burns (Scalds)/Explosion (Blast)' },  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },
+
+    location: '2585 E 16th St',
+
+    phoneNumber: '555-5555',  { id: '8', name: 'Carbon Monoxide/Inhalation/HazMat/CBRN' },  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' },
+
+    problem: 'Having a baby, heads out',
+
+    withPatient: 'Yes',  { id: '9', name: 'Cardiac or Respiratory Arrest/Death' },];
+
+    numHurt: '1',
+
+    age: '',  { id: '10', name: 'Chest Pain/Chest Discomfort (Non-Traumatic)' },
+
+    gender: '',
+
+    conscious: '',];type TabType = 'Entry' | 'KQ' | 'PDI/CEI' | 'DLS' | 'Summary';
+
+    breathing: '',
+
+    chiefComplaint: ''
+
+  });
+
+export default function EntryPage() {export default function EntryPage() {
+
+  useEffect(() => {
+
+    setIsTimerRunning(true);  const [elapsed, setElapsed] = useState(0);  const [elapsed, setElapsed] = useState(0);
+
+  }, []);
+
+  const [isTimerRunning, setIsTimerRunning] = useState(false);  const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+  useEffect(() => {
+
+    if (!isTimerRunning) return;  const [progress, setProgress] = useState(0);  const [progress, setProgress] = useState(0);
+
+
+
+    const timer = setInterval(() => {  const [activeTab, setActiveTab] = useState<TabType>('Entry');  const [activeTab, setActiveTab] = useState<TabType>('Entry');
+
+      setElapsed(prev => {
+
+        const newElapsed = prev + 1;  const [activeSubTab, setActiveSubTab] = useState('Case Entry');  const [activeSubTab, setActiveSubTab] = useState('Case Entry');
+
+        setProgress(Math.min((newElapsed / 60) * 100, 100));
+
+        return newElapsed;  const [caseNumber, setCaseNumber] = useState('2000005541');  const [caseNumber, setCaseNumber] = useState('2000005541');
+
+      });
+
+    }, 1000);  const [filteredProtocols, setFilteredProtocols] = useState<typeof protocols>([]);  const [filteredProtocols, setFilteredProtocols] = useState<typeof protocols>([]);
+
+
+
+    return () => {
+
+      if (timer) clearInterval(timer);
+
+    };  const [formData, setFormData] = useState({  const [formData, setFormData] = useState({
+
+  }, [isTimerRunning]);
+
+    location: '2585 E 16th St',    location: '2585 E 16th St',
+
+  const formatTime = (seconds: number) => {
+
+    const mins = Math.floor(seconds / 60);    phoneNumber: '555-5555',    phoneNumber: '555-5555',
+
+    const secs = seconds % 60;
+
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;    problem: 'Having a baby, heads out',    problem: 'Having a baby, heads out',
+
+  };
+
+    withPatient: 'Yes',    withPatient: 'Yes',
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+
+    const { name, value } = e.target;    numHurt: '1',    numHurt: '1',
+
+    setFormData(prev => ({
+
+      ...prev,    age: '',    age: '',
+
+      [name]: value
+
+    }));    gender: '',    gender: '',
+
+  };
+
+    conscious: '',    conscious: '',
+
+  const handleLogout = () => {
+
+    window.location.href = '/';    breathing: '',    breathing: '',
+
+  };
+
+    chiefComplaint: ''    chiefComplaint: ''
+
+  const handleCloseCase = () => {
+
+    // Handle close case  });  });
+
+  };
+
+
+
+  const handleChangeCaseNumber = () => {
+
+    // Handle change case number  useEffect(() => {  useEffect(() => {
+
+  };
+
+    setIsTimerRunning(true);    setIsTimerRunning(true);
+
+  const handlePrintCase = () => {
+
+    window.print();  }, []);  }, []);
+
+  };
+
+
+
+  return (
+
+    <div className="h-screen flex flex-col bg-[#E8E8E8]">  useEffect(() => {  useEffect(() => {
+
+      <EntryNavigation
+
+        username="SUPERVISOR"    if (!isTimerRunning) return;    if (!isTimerRunning) return;
+
+        fullName="John Supervisor"
+
+        caseNumber={caseNumber}
+
+        onLogout={handleLogout}
+
+        onCloseCase={handleCloseCase}    const timer = setInterval(() => {    const timer = setInterval(() => {
+
+        onChangeCaseNumber={handleChangeCaseNumber}
+
+        onPrintCase={handlePrintCase}      setElapsed(prev => {      setElapsed(prev => {
+
+      />
+
+              const newElapsed = prev + 1;        const newElapsed = prev + 1;
+
+      {/* Top Menu Bar */}
+
+      <div className="bg-[#E8E8E8] border-b border-gray-300 h-8">        setProgress(Math.min((newElapsed / 60) * 100, 100));        setProgress(Math.min((newElapsed / 60) * 100, 100));
+
+        <div className="flex items-center h-full px-2">
+
+          <div className="flex space-x-4">        return newElapsed;        return newElapsed;
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">File</button>
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">View</button>      });      });
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Spec Log</button>
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Options</button>    }, 1000);    }, 1000);
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Go to language</button>
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Tabs</button>
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Help</button>
+
+          </div>    return () => {    return () => {
+
+        </div>
+
+      </div>      if (timer) clearInterval(timer);      if (timer) clearInterval(timer);
+
+
+
+      {/* Main Navigation Tabs */}    };    };
+
+      <div className="bg-[#C0C0C0] border-b border-gray-300">
+
+        <div className="flex">  }, [isTimerRunning]);  }, [isTimerRunning]);
+
+          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+
+            <button
+
+              key={tab}
+
+              onClick={() => setActiveTab(tab as TabType)}  const formatTime = (seconds: number) => {  const formatTime = (seconds: number) => {
+
+              className={`px-6 py-2 text-sm font-medium ${
+
+                tab === activeTab    const mins = Math.floor(seconds / 60);    const mins = Math.floor(seconds / 60);
+
+                  ? 'bg-white text-black border-t-2 border-blue-500'
+
+                  : 'text-black hover:bg-gray-200'    const secs = seconds % 60;    const secs = seconds % 60;
+
+              } border-r border-gray-300`}
+
+            >    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+              {tab}
+
+            </button>  };  };
+
+          ))}
+
+        </div>
+
+      </div>
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+
+      {/* Timer Bar */}
+
+      <div className="bg-[#1a1a1a] border-b border-gray-700 h-10">    const { name, value } = e.target;    const { name, value } = e.target;
+
+        <div className="flex items-center justify-between h-full px-2">
+
+          <div className="text-white font-mono text-lg">{formatTime(elapsed)}</div>    setFormData(prev => ({    setFormData(prev => ({
+
+          <div className="flex-1 flex justify-center px-4">
+
+            <div className="w-1/2 max-w-lg h-3 bg-gray-700 rounded-full overflow-hidden">      ...prev,      ...prev,
+
+              <div 
+
+                className="h-full bg-[#1D9BF0]"      [name]: value      [name]: value
+
+                style={{ width: `${progress}%`, transition: 'width 1s linear' }}
+
+              />    }));    }));
+
+            </div>
+
+          </div>  };  };
+
+        </div>
+
+      </div>
+
+
+
+      {/* Sub Navigation */}  const handleLogout = () => {  const handleLogout = () => {
+
+      <div className="bg-[#D3D3D3] border-b border-gray-300">
+
+        <div className="flex">    window.location.href = '/';    window.location.href = '/';
+
+          <button
+
+            onClick={() => setActiveSubTab('Case Entry')}  };  };
+
+            className={`px-4 py-2 text-sm font-medium ${
+
+              activeSubTab === 'Case Entry'
+
+                ? 'bg-white text-black border-t-2 border-blue-500'
+
+                : 'text-black hover:bg-gray-200'  const handleCloseCase = () => {  const handleCloseCase = () => {
+
+            } border-r border-gray-300`}
+
+          >    // Handle close case    // Handle close case
+
+            Case Entry
+
+          </button>  };  };
+
+          <button
+
+            onClick={() => setActiveSubTab('Additional Information')}
+
+            className={`px-4 py-2 text-sm font-medium ${
+
+              activeSubTab === 'Additional Information'  const handleChangeCaseNumber = () => {  const handleChangeCaseNumber = () => {
+
+                ? 'bg-white text-black border-t-2 border-blue-500'
+
+                : 'text-black hover:bg-gray-200'    // Handle change case number    // Handle change case number
+
+            } border-r border-gray-300`}
+
+          >  };  };
+
+            Additional Information
+
+          </button>
+
+        </div>
+
+      </div>  const handlePrintCase = () => {  const handlePrintCase = () => {
+
+
+
+      {/* Main Content Area */}    window.print();    window.print();
+
+      <div className="flex-1 bg-[#E8E8E8] p-4">
+
+        <div className="max-w-4xl mx-auto">  };  };
+
+          {activeTab === 'Entry' && (
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+              <div className="grid grid-cols-[200px,1fr] gap-x-4 gap-y-3 items-center">
+
+                {/* Entry form content */}  return (  return (
+
+                <div className="text-black font-medium">The location is:</div>
+
+                <input    <div className="min-h-screen flex flex-col bg-[#E8E8E8]">    <div className="h-screen flex flex-col overflow-hidden">
+
+                  type="text"
+
+                  value={formData.location}      <EntryNavigation      <EntryNavigation
+
+                  onChange={handleChange}
+
+                  name="location"        username="SUPERVISOR"        username="SUPERVISOR"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                />        fullName="John Supervisor"        fullName="John Supervisor"
+
+
+
+                <div className="text-black font-medium">The phone number is:</div>        caseNumber={caseNumber}        caseNumber={caseNumber}
+
+                <input
+
+                  type="tel"        onLogout={handleLogout}        onLogout={handleLogout}
+
+                  value={formData.phoneNumber}
+
+                  onChange={handleChange}        onCloseCase={handleCloseCase}        onCloseCase={handleCloseCase}
+
+                  name="phoneNumber"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"        onChangeCaseNumber={handleChangeCaseNumber}        onChangeCaseNumber={handleChangeCaseNumber}
+
+                />
+
+        onPrintCase={handlePrintCase}        onPrintCase={handlePrintCase}
+
+                <div className="text-black font-medium">The problem is:</div>
+
+                <input      />      />
+
+                  type="text"
+
+                  value={formData.problem}            
+
+                  onChange={handleChange}
+
+                  name="problem"      {/* Top Menu Bar */}      {/* Top Menu Bar */}
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                />      <div className="bg-[#E8E8E8] border-b border-gray-300 h-8">      <div className="bg-[#E8E8E8] border-b border-gray-300 h-8">
+
+
+
+                <div className="text-black font-medium">Are you with the patient?</div>        <div className="flex items-center h-full px-2">        <div className="flex items-center h-full px-2">
+
+                <select
+
+                  value={formData.withPatient}          <div className="flex space-x-4">          <div className="flex space-x-4">
+
+                  onChange={handleChange}
+
+                  name="withPatient"            <button className="text-black hover:bg-gray-300 px-2 h-full">File</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">File</button>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                >            <button className="text-black hover:bg-gray-300 px-2 h-full">View</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">View</button>
+
+                  <option value="Yes">Yes</option>
+
+                  <option value="No">No</option>            <button className="text-black hover:bg-gray-300 px-2 h-full">Spec Log</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">Spec Log</button>
+
+                </select>
+
+            <button className="text-black hover:bg-gray-300 px-2 h-full">Options</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">Options</button>
+
+                <div className="text-black font-medium">Number of people hurt:</div>
+
+                <input            <button className="text-black hover:bg-gray-300 px-2 h-full">Go to language</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">Go to language</button>
+
+                  type="number"
+
+                  value={formData.numHurt}            <button className="text-black hover:bg-gray-300 px-2 h-full">Tabs</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">Tabs</button>
+
+                  onChange={handleChange}
+
+                  name="numHurt"            <button className="text-black hover:bg-gray-300 px-2 h-full">Help</button>            <button className="text-black hover:bg-gray-300 px-2 h-full">Help</button>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                />          </div>          </div>
+
+
+
+                <div className="text-black font-medium">Age:</div>        </div>        </div>
+
+                <input
+
+                  type="text"      </div>      </div>
+
+                  value={formData.age}
+
+                  onChange={handleChange}
+
+                  name="age"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"      {/* Main Navigation Tabs */}      {/* Main Navigation Tabs */}
+
+                />
+
+      <div className="bg-[#C0C0C0] border-b border-gray-300">      <div className="bg-[#C0C0C0] border-b border-gray-400 h-10">
+
+                <div className="text-black font-medium">Gender:</div>
+
+                <select        <div className="flex">        <div className="flex h-full">
+
+                  value={formData.gender}
+
+                  onChange={handleChange}          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (          {['Entry', 'KQ', 'PDI/CEI', 'DLS', 'Summary'].map((tab) => (
+
+                  name="gender"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"            <button            <button
+
+                >
+
+                  <option value="">Select...</option>              key={tab}              key={tab}
+
+                  <option value="Male">Male</option>
+
+                  <option value="Female">Female</option>              onClick={() => setActiveTab(tab as TabType)}              onClick={() => setActiveTab(tab as TabType)}
+
+                </select>
+
+              className={`px-6 py-2 text-sm font-medium ${              className={`flex-1 h-full ${
+
+                <div className="text-black font-medium">Is patient conscious?</div>
+
+                <select                tab === activeTab                tab === activeTab
+
+                  value={formData.conscious}
+
+                  onChange={handleChange}                  ? 'bg-white text-black border-t-2 border-blue-500'                  ? 'bg-white text-black font-medium'
+
+                  name="conscious"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                  : 'text-black hover:bg-gray-200'                  : 'text-black hover:bg-gray-300 transition'
+
+                >
+
+                  <option value="">Select...</option>              } border-r border-gray-300`}              } border-r border-gray-400`}
+
+                  <option value="Yes">Yes</option>
+
+                  <option value="No">No</option>            >            >
+
+                </select>
+
+              {tab}              {tab}
+
+                <div className="text-black font-medium">Is patient breathing?</div>
+
+                <select            </button>            </button>
+
+                  value={formData.breathing}
+
+                  onChange={handleChange}          ))}          ))}
+
+                  name="breathing"
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"        </div>        </div>
+
+                >
+
+                  <option value="">Select...</option>      </div>      </div>
+
+                  <option value="Yes">Yes</option>
+
+                  <option value="No">No</option>
+
+                </select>
+
+      {/* Timer Bar */}      {/* Timer Bar */}
+
+                <div className="text-black font-medium">Chief Complaint:</div>
+
+                <div className="relative w-full">      <div className="bg-[#1a1a1a] border-b border-gray-700 h-10">      <div className="bg-[#1a1a1a] border-b border-gray-700 h-10">
+
+                  <input
+
+                    type="text"        <div className="flex items-center justify-between h-full px-2">        <div className="flex items-center justify-between h-full px-2">
+
+                    value={formData.chiefComplaint}
+
+                    onChange={(e) => {          <div className="text-white font-mono text-lg">{formatTime(elapsed)}</div>          <div className="text-white font-mono text-lg">{formatTime(elapsed)}</div>
+
+                      const value = e.target.value;
+
+                      setFormData(prev => ({          <div className="flex-1 flex justify-center px-4">          <div className="flex-1 flex justify-center px-4">
+
+                        ...prev,
+
+                        chiefComplaint: value            <div className="w-1/2 max-w-lg h-3 bg-gray-700 rounded-full overflow-hidden">            <div className="w-1/2 max-w-lg h-3 bg-gray-700 rounded-full overflow-hidden">
+
+                      }));
+
+                                    <div               <div 
+
+                      if (value.trim().length > 0) {
+
+                        const searchTerm = value.toLowerCase();                className="h-full bg-[#1D9BF0]"                className="h-full bg-[#1D9BF0] animate-loading-wave"
+
+                        if (/^\d+/.test(value)) {
+
+                          const filtered = protocols.filter(protocol =>                style={{width: `${progress}%`, transition: 'width 1s linear'}}                style={{width: `${progress}%`}}
+
+                            protocol.id.startsWith(value.trim())
+
+                          );              />              />
+
+                          setFilteredProtocols(filtered);
+
+                        } else {            </div>            </div>
+
+                          const filtered = protocols.filter(protocol =>
+
+                            protocol.name.toLowerCase().includes(searchTerm)          </div>          </div>
+
+                          );
+
+                          setFilteredProtocols(filtered);        </div>        </div>
+
+                        }
+
+                      } else {      </div>      </div>
+
+                        setFilteredProtocols([]);
+
+                      }
+
+                    }}
+
+                    onFocus={() => {      {/* Sub Navigation */}      {/* Sub Navigation */}
+
+                      if (!formData.chiefComplaint || !formData.chiefComplaint.trim()) {
+
+                        setFilteredProtocols([]);      <div className="bg-[#D3D3D3] border-b border-gray-300">      <div className="bg-[#D3D3D3] border-b border-gray-400 h-10">
+
+                      }
+
+                    }}        <div className="flex">        <div className="flex h-full">
+
+                    onBlur={() => {
+
+                      setTimeout(() => setFilteredProtocols([]), 200);          <button          <button
+
+                    }}
+
+                    name="chiefComplaint"            onClick={() => setActiveSubTab('Case Entry')}            onClick={() => setActiveSubTab('Case Entry')}
+
+                    className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                    placeholder="Type a number or search protocols..."            className={`px-4 py-2 text-sm font-medium ${            className={`px-4 h-full ${
+
+                  />
+
+                  {filteredProtocols.length > 0 && formData.chiefComplaint.trim().length > 0 && (              activeSubTab === 'Case Entry'              activeSubTab === 'Case Entry' ? 'bg-[#E8E8E8]' : ''
+
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+
+                      {filteredProtocols.map(protocol => (                ? 'bg-white text-black border-t-2 border-blue-500'            } border-r border-gray-400`}
+
+                        <div
+
+                          key={protocol.id}                : 'text-black hover:bg-gray-200'          >
+
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-black"
+
+                          onClick={() => {            } border-r border-gray-300`}            Case Entry
+
+                            setFormData(prev => ({
+
+                              ...prev,          >          </button>
+
+                              chiefComplaint: `${protocol.id} - ${protocol.name}`
+
+                            }));            Case Entry          <button
+
+                            setFilteredProtocols([]);
+
+                          }}          </button>            onClick={() => setActiveSubTab('Additional Information')}
+
+                        >
+
+                          {protocol.id} - {protocol.name}          <button            className={`px-4 h-full ${
+
+                        </div>
+
+                      ))}            onClick={() => setActiveSubTab('Additional Information')}              activeSubTab === 'Additional Information' ? 'bg-[#E8E8E8]' : ''
+
+                    </div>
+
+                  )}            className={`px-4 py-2 text-sm font-medium ${            } border-r border-gray-400`}
+
+                </div>
+
+              </div>              activeSubTab === 'Additional Information'          >
+
+            </div>
+
+          )}                ? 'bg-white text-black border-t-2 border-blue-500'            Additional Information
+
+          
+
+          {activeTab === 'KQ' && (                : 'text-black hover:bg-gray-200'          </button>
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+              <h2 className="text-xl font-semibold mb-4">Key Questions</h2>            } border-r border-gray-300`}        </div>
+
+              <div className="space-y-4">
+
+                <div className="p-3 bg-white rounded border border-gray-300">          >      </div>
+
+                  <p className="font-medium">1. How many months pregnant is she?</p>
+
+                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">            Additional Information
+
+                    <option value="">Select...</option>
+
+                    <option value="1-3">1-3 months</option>          </button>      {/* Main Content Area */}
+
+                    <option value="4-6">4-6 months</option>
+
+                    <option value="7-9">7-9 months</option>        </div>      <div className="flex-1 overflow-auto bg-[#E8E8E8]">
+
+                  </select>
+
+                </div>      </div>        <div className="max-w-4xl mx-auto p-4">
+
+                <div className="p-3 bg-white rounded border border-gray-300">
+
+                  <p className="font-medium">2. Is this her first pregnancy?</p>          {activeTab === 'Entry' && (
+
+                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">
+
+                    <option value="">Select...</option>      {/* Main Content Area */}            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+                    <option value="Yes">Yes</option>
+
+                    <option value="No">No</option>      <div className="flex-1 bg-[#E8E8E8] p-4">              <div className="grid grid-cols-[200px,1fr] gap-x-4 gap-y-3 items-center">
+
+                  </select>
+
+                </div>        <div className="max-w-4xl mx-auto">                <div className="text-black font-medium">The location is:</div>
+
+              </div>
+
+            </div>          {activeTab === 'Entry' && (                <input
+
+          )}
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                  type="text"
+
+          {activeTab === 'PDI/CEI' && (
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">              <div className="grid grid-cols-[200px,1fr] gap-x-4 gap-y-3 items-center">                  value={formData.location}
+
+              <h2 className="text-xl font-semibold mb-4">Post Dispatch Instructions</h2>
+
+              <div className="space-y-4">                <div className="text-black font-medium">The location is:</div>                  onChange={handleChange}
+
+                <div className="p-3 bg-white rounded border border-gray-300">
+
+                  <p className="text-sm text-gray-700">1. Do not let her get up or try to go to the bathroom.</p>                <input                  name="location"
+
+                  <div className="mt-2 flex items-center space-x-2">
+
+                    <input type="checkbox" className="form-checkbox h-4 w-4" />                  type="text"                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                    <label>Given</label>
+
+                  </div>                  value={formData.location}                />
+
+                </div>
+
+                <div className="p-3 bg-white rounded border border-gray-300">                  onChange={handleChange}
+
+                  <p className="text-sm text-gray-700">2. Support the baby's head and shoulders as they appear.</p>
+
+                  <div className="mt-2 flex items-center space-x-2">                  name="location"                <div className="text-black font-medium">The phone number is:</div>
+
+                    <input type="checkbox" className="form-checkbox h-4 w-4" />
+
+                    <label>Given</label>                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                <input
+
+                  </div>
+
+                </div>                />                  type="tel"
+
+              </div>
+
+            </div>                  value={formData.phoneNumber}
+
+          )}
+
+                <div className="text-black font-medium">The phone number is:</div>                  onChange={handleChange}
+
+          {activeTab === 'DLS' && (
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                <input                  name="phoneNumber"
+
+              <h2 className="text-xl font-semibold mb-4">Dispatch Life Support</h2>
+
+              <div className="space-y-4">                  type="tel"                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                <div className="p-3 bg-white rounded border border-gray-300">
+
+                  <p className="font-medium">Critical DLS Information</p>                  value={formData.phoneNumber}                />
+
+                  <ul className="mt-2 space-y-2 text-sm">
+
+                    <li>• Have her lie down on her left side</li>                  onChange={handleChange}
+
+                    <li>• Gather clean towels and blankets</li>
+
+                    <li>• Lock any pets away from the patient</li>                  name="phoneNumber"                <div className="text-black font-medium">The problem is:</div>
+
+                  </ul>
+
+                </div>                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                <input
+
+              </div>
+
+            </div>                />                  type="text"
+
+          )}
+
+                  value={formData.problem}
+
+          {activeTab === 'Summary' && (
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                <div className="text-black font-medium">The problem is:</div>                  onChange={handleChange}
+
+              <h2 className="text-xl font-semibold mb-4">Case Summary</h2>
+
+              <div className="space-y-4">                <input                  name="problem"
+
+                <div className="grid grid-cols-2 gap-4">
+
+                  <div>                  type="text"                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                    <h3 className="font-medium">Case Details</h3>
+
+                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">                  value={formData.problem}                />
+
+                      <p><strong>Case Number:</strong> {caseNumber}</p>
+
+                      <p><strong>Location:</strong> {formData.location}</p>                  onChange={handleChange}
+
+                      <p><strong>Phone:</strong> {formData.phoneNumber}</p>
+
+                    </div>                  name="problem"                <div className="text-black font-medium">Are you with the patient?</div>
+
+                  </div>
+
+                  <div>                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                <select
+
+                    <h3 className="font-medium">Patient Information</h3>
+
+                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">                />                  value={formData.withPatient}
+
+                      <p><strong>Age:</strong> {formData.age || 'N/A'}</p>
+
+                      <p><strong>Gender:</strong> {formData.gender || 'N/A'}</p>                  onChange={handleChange}
+
+                      <p><strong>Chief Complaint:</strong> {formData.chiefComplaint || 'N/A'}</p>
+
+                    </div>                <div className="text-black font-medium">Are you with the patient?</div>                  name="withPatient"
+
+                  </div>
+
+                </div>                <select                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+              </div>
+
+            </div>                  value={formData.withPatient}                >
+
+          )}
+
+        </div>                  onChange={handleChange}                  <option value="Yes">Yes</option>
+
+      </div>
+
+                  name="withPatient"                  <option value="No">No</option>
+
+      {/* Status Bar */}
+
+      <div className="bg-[#1a1a1a] border-t border-gray-700 h-12">                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                </select>
+
+        <div className="grid grid-cols-3 text-white px-4 py-2">
+
+          <div>                >
+
+            <div className="text-sm">SUPERVISOR</div>
+
+            <div className="text-xs text-gray-400">Case: {caseNumber}</div>                  <option value="Yes">Yes</option>                <div className="text-black font-medium">Number of people hurt:</div>
+
+          </div>
+
+          <div className="text-center">                  <option value="No">No</option>                <input
+
+            <div className="text-sm">Status: Ready</div>
+
+          </div>                </select>                  type="number"
+
+          <div className="text-right">
+
+            <div className="text-sm">DISPATCHUMS</div>                  value={formData.numHurt}
+
+            <div className="text-xs text-gray-400">v0.0.1</div>
+
+          </div>                <div className="text-black font-medium">Number of people hurt:</div>                  onChange={handleChange}
+
+        </div>
+
+      </div>                <input                  name="numHurt"
+
+    </div>
+
+  );                  type="number"                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+}
+                  value={formData.numHurt}                />
+
+                  onChange={handleChange}
+
+                  name="numHurt"                <div className="text-black font-medium">Age:</div>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                <input
+
+                />                  type="text"
+
+                  value={formData.age}
+
+                <div className="text-black font-medium">Age:</div>                  onChange={handleChange}
+
+                <input                  name="age"
+
+                  type="text"                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                  value={formData.age}                />
+
+                  onChange={handleChange}
+
+                  name="age"                <div className="text-black font-medium">Gender:</div>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                <select
+
+                />                  value={formData.gender}
+
+                  onChange={handleChange}
+
+                <div className="text-black font-medium">Gender:</div>                  name="gender"
+
+                <select                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                  value={formData.gender}                >
+
+                  onChange={handleChange}                  <option value="">Select...</option>
+
+                  name="gender"                  <option value="Male">Male</option>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                  <option value="Female">Female</option>
+
+                >                </select>
+
+                  <option value="">Select...</option>
+
+                  <option value="Male">Male</option>                <div className="text-black font-medium">Is patient conscious?</div>
+
+                  <option value="Female">Female</option>                <select
+
+                </select>                  value={formData.conscious}
+
+                  onChange={handleChange}
+
+                <div className="text-black font-medium">Is patient conscious?</div>                  name="conscious"
+
+                <select                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                  value={formData.conscious}                >
+
+                  onChange={handleChange}                  <option value="">Select...</option>
+
+                  name="conscious"                  <option value="Yes">Yes</option>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                  <option value="No">No</option>
+
+                >                </select>
+
+                  <option value="">Select...</option>
+
+                  <option value="Yes">Yes</option>                <div className="text-black font-medium">Is patient breathing?</div>
+
+                  <option value="No">No</option>                <select
+
+                </select>                  value={formData.breathing}
+
+                  onChange={handleChange}
+
+                <div className="text-black font-medium">Is patient breathing?</div>                  name="breathing"
+
+                <select                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                  value={formData.breathing}                >
+
+                  onChange={handleChange}                  <option value="">Select...</option>
+
+                  name="breathing"                  <option value="Yes">Yes</option>
+
+                  className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                  <option value="No">No</option>
+
+                >                </select>
+
+                  <option value="">Select...</option>
+
+                  <option value="Yes">Yes</option>                <div className="text-black font-medium">Chief Complaint:</div>
+
+                  <option value="No">No</option>                <div className="relative w-full">
+
+                </select>                  <input
+
+                    type="text"
+
+                <div className="text-black font-medium">Chief Complaint:</div>                    value={formData.chiefComplaint}
+
+                <div className="relative w-full">                    onChange={(e) => {
+
+                  <input                      const value = e.target.value;
+
+                    type="text"                      setFormData(prev => ({
+
+                    value={formData.chiefComplaint}                        ...prev,
+
+                    onChange={(e) => {                        chiefComplaint: value
+
+                      const value = e.target.value;                      }));
+
+                      setFormData(prev => ({                      
+
+                        ...prev,                      if (value.trim().length > 0) {
+
+                        chiefComplaint: value                        const searchTerm = value.toLowerCase();
+
+                      }));                        if (/^\d+/.test(value)) {
+
+                                                const filtered = protocols.filter(protocol =>
+
+                      if (value.trim().length > 0) {                            protocol.id.startsWith(value.trim())
+
+                        const searchTerm = value.toLowerCase();                          );
+
+                        if (/^\d+/.test(value)) {                          setFilteredProtocols(filtered);
+
+                          const filtered = protocols.filter(protocol =>                        } else {
+
+                            protocol.id.startsWith(value.trim())                          const filtered = protocols.filter(protocol =>
+
+                          );                            protocol.name.toLowerCase().includes(searchTerm)
+
+                          setFilteredProtocols(filtered);                          );
+
+                        } else {                          setFilteredProtocols(filtered);
+
+                          const filtered = protocols.filter(protocol =>                        }
+
+                            protocol.name.toLowerCase().includes(searchTerm)                      } else {
+
+                          );                        setFilteredProtocols([]);
+
+                          setFilteredProtocols(filtered);                      }
+
+                        }                    }}
+
+                      } else {                    onFocus={() => {
+
+                        setFilteredProtocols([]);                      if (!formData.chiefComplaint || !formData.chiefComplaint.trim()) {
+
+                      }                        setFilteredProtocols([]);
+
+                    }}                      }
+
+                    onFocus={() => {                    }}
+
+                      if (!formData.chiefComplaint || !formData.chiefComplaint.trim()) {                    onBlur={() => {
+
+                        setFilteredProtocols([]);                      setTimeout(() => setFilteredProtocols([]), 200);
+
+                      }                    }}
+
+                    }}                    name="chiefComplaint"
+
+                    onBlur={() => {                    className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"
+
+                      setTimeout(() => setFilteredProtocols([]), 200);                    placeholder="Type a number or search protocols..."
+
+                    }}                  />
+
+                    name="chiefComplaint"                  {filteredProtocols.length > 0 && formData.chiefComplaint.trim().length > 0 && (
+
+                    className="border border-gray-400 px-2 py-1 h-8 bg-white text-black w-full"                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+
+                    placeholder="Type a number or search protocols..."                      {filteredProtocols.map(protocol => (
+
+                  />                        <div
+
+                  {filteredProtocols.length > 0 && formData.chiefComplaint.trim().length > 0 && (                          key={protocol.id}
+
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-black"
+
+                      {filteredProtocols.map(protocol => (                          onClick={() => {
+
+                        <div                            setFormData(prev => ({
+
+                          key={protocol.id}                              ...prev,
+
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-black"                              chiefComplaint: `${protocol.id} - ${protocol.name}`
+
+                          onClick={() => {                            }));
+
+                            setFormData(prev => ({                            setFilteredProtocols([]);
+
+                              ...prev,                          }}
+
+                              chiefComplaint: `${protocol.id} - ${protocol.name}`                        >
+
+                            }));                          {protocol.id} - {protocol.name}
+
+                            setFilteredProtocols([]);                        </div>
+
+                          }}                      ))}
+
+                        >                    </div>
+
+                          {protocol.id} - {protocol.name}                  )}
+
+                        </div>                </div>
+
+                      ))}              </div>
+
+                    </div>            </div>
+
+                  )}          )}
+
+                </div>          
+
+              </div>          {activeTab === 'KQ' && (
+
+            </div>            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+          )}              <h2 className="text-xl font-semibold mb-4">Key Questions</h2>
+
+                        <div className="space-y-4">
+
+          {activeTab === 'KQ' && (                <div className="p-3 bg-white rounded border border-gray-300">
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                  <p className="font-medium">1. How many months pregnant is she?</p>
+
+              <h2 className="text-xl font-semibold mb-4">Key Questions</h2>                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">
+
+              <div className="space-y-4">                    <option value="">Select...</option>
+
+                <div className="p-3 bg-white rounded border border-gray-300">                    <option value="1-3">1-3 months</option>
+
+                  <p className="font-medium">1. How many months pregnant is she?</p>                    <option value="4-6">4-6 months</option>
+
+                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">                    <option value="7-9">7-9 months</option>
+
+                    <option value="">Select...</option>                  </select>
+
+                    <option value="1-3">1-3 months</option>                </div>
+
+                    <option value="4-6">4-6 months</option>                <div className="p-3 bg-white rounded border border-gray-300">
+
+                    <option value="7-9">7-9 months</option>                  <p className="font-medium">2. Is this her first pregnancy?</p>
+
+                  </select>                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">
+
+                </div>                    <option value="">Select...</option>
+
+                <div className="p-3 bg-white rounded border border-gray-300">                    <option value="Yes">Yes</option>
+
+                  <p className="font-medium">2. Is this her first pregnancy?</p>                    <option value="No">No</option>
+
+                  <select className="mt-2 w-full border border-gray-400 px-2 py-1 h-8 bg-white text-black">                  </select>
+
+                    <option value="">Select...</option>                </div>
+
+                    <option value="Yes">Yes</option>              </div>
+
+                    <option value="No">No</option>            </div>
+
+                  </select>          )}
+
+                </div>
+
+              </div>          {activeTab === 'PDI/CEI' && (
+
+            </div>            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+          )}              <h2 className="text-xl font-semibold mb-4">Post Dispatch Instructions</h2>
+
+              <div className="space-y-4">
+
+          {activeTab === 'PDI/CEI' && (                <div className="p-3 bg-white rounded border border-gray-300">
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                  <p className="text-sm text-gray-700">1. Do not let her get up or try to go to the bathroom.</p>
+
+              <h2 className="text-xl font-semibold mb-4">Post Dispatch Instructions</h2>                  <div className="mt-2 flex items-center space-x-2">
+
+              <div className="space-y-4">                    <input type="checkbox" className="form-checkbox h-4 w-4" />
+
+                <div className="p-3 bg-white rounded border border-gray-300">                    <label>Given</label>
+
+                  <p className="text-sm text-gray-700">1. Do not let her get up or try to go to the bathroom.</p>                  </div>
+
+                  <div className="mt-2 flex items-center space-x-2">                </div>
+
+                    <input type="checkbox" className="form-checkbox h-4 w-4" />                <div className="p-3 bg-white rounded border border-gray-300">
+
+                    <label>Given</label>                  <p className="text-sm text-gray-700">2. Support the baby's head and shoulders as they appear.</p>
+
+                  </div>                  <div className="mt-2 flex items-center space-x-2">
+
+                </div>                    <input type="checkbox" className="form-checkbox h-4 w-4" />
+
+                <div className="p-3 bg-white rounded border border-gray-300">                    <label>Given</label>
+
+                  <p className="text-sm text-gray-700">2. Support the baby's head and shoulders as they appear.</p>                  </div>
+
+                  <div className="mt-2 flex items-center space-x-2">                </div>
+
+                    <input type="checkbox" className="form-checkbox h-4 w-4" />              </div>
+
+                    <label>Given</label>            </div>
+
+                  </div>          )}
+
+                </div>
+
+              </div>          {activeTab === 'DLS' && (
+
+            </div>            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+          )}              <h2 className="text-xl font-semibold mb-4">Dispatch Life Support</h2>
+
+              <div className="space-y-4">
+
+          {activeTab === 'DLS' && (                <div className="p-3 bg-white rounded border border-gray-300">
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                  <p className="font-medium">Critical DLS Information</p>
+
+              <h2 className="text-xl font-semibold mb-4">Dispatch Life Support</h2>                  <ul className="mt-2 space-y-2 text-sm">
+
+              <div className="space-y-4">                    <li>• Have her lie down on her left side</li>
+
+                <div className="p-3 bg-white rounded border border-gray-300">                    <li>• Gather clean towels and blankets</li>
+
+                  <p className="font-medium">Critical DLS Information</p>                    <li>• Lock any pets away from the patient</li>
+
+                  <ul className="mt-2 space-y-2 text-sm">                  </ul>
+
+                    <li>• Have her lie down on her left side</li>                </div>
+
+                    <li>• Gather clean towels and blankets</li>              </div>
+
+                    <li>• Lock any pets away from the patient</li>            </div>
+
+                  </ul>          )}
+
+                </div>
+
+              </div>          {activeTab === 'Summary' && (
+
+            </div>            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">
+
+          )}              <h2 className="text-xl font-semibold mb-4">Case Summary</h2>
+
+              <div className="space-y-4">
+
+          {activeTab === 'Summary' && (                <div className="grid grid-cols-2 gap-4">
+
+            <div className="bg-[#D3D3D3] rounded shadow-sm p-4">                  <div>
+
+              <h2 className="text-xl font-semibold mb-4">Case Summary</h2>                    <h3 className="font-medium">Case Details</h3>
+
+              <div className="space-y-4">                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">
+
+                <div className="grid grid-cols-2 gap-4">                      <p><strong>Case Number:</strong> {caseNumber}</p>
+
+                  <div>                      <p><strong>Location:</strong> {formData.location}</p>
+
+                    <h3 className="font-medium">Case Details</h3>                      <p><strong>Phone:</strong> {formData.phoneNumber}</p>
+
+                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">                    </div>
+
+                      <p><strong>Case Number:</strong> {caseNumber}</p>                  </div>
+
+                      <p><strong>Location:</strong> {formData.location}</p>                  <div>
+
+                      <p><strong>Phone:</strong> {formData.phoneNumber}</p>                    <h3 className="font-medium">Patient Information</h3>
+
+                    </div>                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">
+
+                  </div>                      <p><strong>Age:</strong> {formData.age || 'N/A'}</p>
+
+                  <div>                      <p><strong>Gender:</strong> {formData.gender || 'N/A'}</p>
+
+                    <h3 className="font-medium">Patient Information</h3>                      <p><strong>Chief Complaint:</strong> {formData.chiefComplaint || 'N/A'}</p>
+
+                    <div className="mt-2 p-3 bg-white rounded border border-gray-300">                    </div>
+
+                      <p><strong>Age:</strong> {formData.age || 'N/A'}</p>                  </div>
+
+                      <p><strong>Gender:</strong> {formData.gender || 'N/A'}</p>                </div>
+
+                      <p><strong>Chief Complaint:</strong> {formData.chiefComplaint || 'N/A'}</p>              </div>
+
+                    </div>            </div>
+
+                  </div>          )}
+
+                </div>        </div>
+
+              </div>      </div>
+
+            </div>
+
+          )}      {/* Status Bar */}
+
+        </div>      <div className="bg-[#1a1a1a] border-t border-gray-700 h-12">
+
+      </div>        <div className="grid grid-cols-3 text-white px-4 py-2">
+
+          <div>
+
+      {/* Status Bar */}            <div className="text-sm">SUPERVISOR</div>
+
+      <div className="bg-[#1a1a1a] border-t border-gray-700 h-12">            <div className="text-xs text-gray-400">Case: {caseNumber}</div>
+
+        <div className="grid grid-cols-3 text-white px-4 py-2">          </div>
+
+          <div>          <div className="text-center">
+
+            <div className="text-sm">SUPERVISOR</div>            <div className="text-sm">Status: Ready</div>
+
+            <div className="text-xs text-gray-400">Case: {caseNumber}</div>          </div>
+
+          </div>          <div className="text-right">
+
+          <div className="text-center">            <div className="text-sm">DISPATCHUMS</div>
+
+            <div className="text-sm">Status: Ready</div>            <div className="text-xs text-gray-400">v0.0.1</div>
+
+          </div>          </div>
+
+          <div className="text-right">        </div>
+
+            <div className="text-sm">DISPATCHUMS</div>      </div>
+
+            <div className="text-xs text-gray-400">v0.0.1</div>    </div>
+
+          </div>  );
+
+        </div>}
+
+      </div>
+    </div>
+  );
+}
