@@ -1,0 +1,473 @@
+# DISPATCHUMS MEDICAL PRIORITY DISPATCH SYSTEM
+
+A medical priority dispatch system that streamlines case management, resource allocation, determinant codes and emergency response coordination between dispatchers, admins and responders.
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Application](#running-the-application)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [Database Management](#database-management)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🎯 Overview
+
+DispatchUMS is a modern, full-stack emergency dispatch system designed to help emergency services manage cases efficiently. The system provides real-time case tracking, admin management, call card display, and comprehensive feedback testimonial features.
+
+## ✨ Features
+
+### Core Features
+- 🔐 **User Authentication & Authorization**: Secure JWT-based authentication with role-based access control (Admin/User)
+- 📊 **Dashboard**: Comprehensive overview with analytics and insights
+- 🚨 **Case Management**: Create, update, track, and manage emergency cases
+- 🔍 **Diagnostic Tools**: Advanced diagnostic features for case analysis
+- 👤 **User Profile Management**: Profile updates and password management
+- 📝 **Feedback System**: Interactive chat-based feedback mechanism
+- 📧 **Email Notifications**: Automated email notifications for password recovery and verification
+- 📈 **Reporting & Analytics**: Visual analytics using charts and graphs
+- 🗑️ **Trash Management**: Soft delete functionality with restore capabilities
+
+### Additional Features
+- Responsive design for mobile and desktop
+- Real-time data updates
+- PDF export functionality
+- Timeline tracking for cases
+- Work info management
+
+## 🛠 Technology Stack
+
+### Frontend
+- **Framework**: [Next.js](https://nextjs.org/) 15.5.4
+- **UI Library**: [React](https://reactjs.org/) 19.1.0
+- **Language**: [TypeScript](https://www.typescriptlang.org/) 5.9.3
+- **Styling**: 
+  - [Tailwind CSS](https://tailwindcss.com/) 4.x
+  - [Chakra UI](https://chakra-ui.com/) 3.28.1
+  - [Emotion](https://emotion.sh/)
+- **Icons**: 
+  - [Heroicons](https://heroicons.com/) 2.2.0
+  - [Lucide React](https://lucide.dev/) 0.544.0
+  - [React Icons](https://react-icons.github.io/react-icons/) 5.5.0
+- **Charts**: [Recharts](https://recharts.org/) 3.5.1
+- **Animation**: [Framer Motion](https://www.framer.com/motion/) 12.23.24
+- **PDF Generation**: [jsPDF](https://github.com/parallax/jsPDF) 4.0.0
+
+### Backend
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) 0.104.0+
+- **Server**: [Uvicorn](https://www.uvicorn.org/) 0.24.0+
+- **Language**: Python 3.8+
+- **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) 2.0.25+
+- **Database**: SQLite (development) / PostgreSQL (production ready)
+- **Authentication**: 
+  - [python-jose](https://github.com/mpdavis/python-jose) (JWT)
+  - [passlib](https://passlib.readthedocs.io/) (password hashing with bcrypt)
+- **Environment Management**: [python-dotenv](https://github.com/theskumar/python-dotenv)
+- **File Uploads**: [python-multipart](https://github.com/andrew-d/python-multipart)
+
+### Development Tools
+- **Linting**: ESLint
+- **Process Management**: Concurrently
+- **Version Control**: Git
+
+## 📁 Project Structure
+
+```
+BI22110013_SOURCECODE_KP44104/
+├── frontend/                      # Next.js frontend application
+│   ├── app/                       # App directory (Next.js 13+ App Router)
+│   │   ├── dashboard/            # Dashboard pages
+│   │   │   ├── admin/           # Admin-specific pages
+│   │   │   │   ├── design/      # Design management
+│   │   │   │   └── users/       # User management
+│   │   │   └── user/            # User-specific pages
+│   │   ├── diagnostic/          # Diagnostic tools
+│   │   ├── entry/               # Entry pages
+│   │   ├── login/               # Login page
+│   │   ├── profile/             # User profile pages
+│   │   ├── questions/           # Questions/FAQ section
+│   │   ├── register/            # Registration page
+│   │   ├── layout.tsx           # Root layout
+│   │   ├── page.tsx             # Landing page
+│   │   └── globals.css          # Global styles
+│   ├── components/              # React components
+│   │   ├── landing/            # Landing page components
+│   │   └── shared/             # Shared/reusable components
+│   ├── contexts/               # React contexts
+│   ├── lib/                    # Utility functions and API clients
+│   │   └── api.ts              # API integration
+│   ├── public/                 # Static assets
+│   ├── types/                  # TypeScript type definitions
+│   ├── next.config.ts          # Next.js configuration
+│   ├── tailwind.config.ts      # Tailwind CSS configuration
+│   ├── tsconfig.json           # TypeScript configuration
+│   └── package.json            # Frontend dependencies
+│
+├── my-fastapi-backend/          # FastAPI backend application
+│   ├── app/                     # Application source code
+│   │   ├── database/           # Database configuration
+│   │   ├── models/             # SQLAlchemy models
+│   │   ├── routers/            # API route handlers
+│   │   │   ├── auth.py         # Authentication endpoints
+│   │   │   ├── cases.py        # Case management endpoints
+│   │   │   └── feedback.py     # Feedback endpoints
+│   │   ├── auth.py             # Authentication utilities
+│   │   ├── email_service.py    # Email service
+│   │   ├── main.py             # FastAPI application entry point
+│   │   └── __init__.py
+│   ├── tests/                  # Test files (in root)
+│   ├── init_database.py        # Database initialization script
+│   ├── migrate_*.py            # Database migration scripts
+│   ├── requirements.txt        # Backend dependencies
+│   ├── run_server_simple.bat   # Simple server start script
+│   └── start_server.bat        # Server start script
+│
+├── components/                  # Shared components (if any)
+│   └── shared/
+│
+├── package.json                # Root package.json with scripts
+└── README.md                   # This file
+```
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+### Required
+- **Node.js**: >= 18.0.0
+- **npm**: >= 9.0.0
+- **Python**: >= 3.8
+- **pip**: Latest version
+
+### Recommended
+- **Git**: For version control
+- **VS Code**: With recommended extensions (ESLint, Pylance, Prettier)
+
+## 🚀 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd https://github.com/claygiraf/dispatchums/
+```
+
+### 2. Install All Dependencies
+
+Using the root package.json:
+
+```bash
+npm run install:all
+```
+
+Or install separately:
+
+#### Frontend Dependencies
+```bash
+cd frontend
+npm install
+```
+
+#### Backend Dependencies
+```bash
+cd my-fastapi-backend
+pip install -r requirements.txt
+```
+
+## ⚙️ Configuration
+
+### Backend Configuration
+
+1. Create a `.env` file in the `my-fastapi-backend` directory:
+
+```env
+# Application Settings
+PROJECT_NAME=Dispatchums API
+DEBUG=True
+
+# Database
+DATABASE_URL=sqlite:///./dispatchums.db
+# For PostgreSQL: postgresql://user:password@localhost/dbname
+
+# JWT Authentication
+SECRET_KEY=your-secret-key-here-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Email Settings (for password recovery)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+EMAIL_FROM=noreply@dispatchums.com
+
+# CORS Settings
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+```
+
+2. Initialize the database:
+
+```bash
+cd my-fastapi-backend
+python init_database.py
+```
+
+### Frontend Configuration
+
+The frontend is configured to connect to `http://localhost:8000` by default. Update the API base URL in `frontend/lib/api.ts` if needed.
+
+## 🏃 Running the Application
+
+### Development Mode
+
+#### Option 1: Run Both Together (Recommended)
+From the root directory:
+
+```bash
+npm run dev
+```
+
+This will start:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+
+#### Option 2: Run Separately
+
+**Backend:**
+```bash
+cd my-fastapi-backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+### Production Mode
+
+#### Build Frontend
+```bash
+npm run build
+```
+
+#### Start Production Servers
+```bash
+npm run start
+```
+
+Or manually:
+```bash
+# Backend
+cd my-fastapi-backend
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Frontend
+cd frontend
+npm run build
+npm start
+```
+
+## 📚 API Documentation
+
+Once the backend is running, access the interactive API documentation:
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/api/v1/openapi.json
+
+### Main API Endpoints
+
+#### Authentication
+- `POST /api/v1/login` - User login
+- `POST /api/v1/register` - User registration
+- `POST /api/v1/forgot-password` - Request password reset
+- `POST /api/v1/verify-email` - Verify email address
+- `GET /api/v1/me` - Get current user info
+
+#### Cases
+- `GET /api/v1/cases` - List all cases
+- `POST /api/v1/cases` - Create new case
+- `GET /api/v1/cases/{id}` - Get case details
+- `PUT /api/v1/cases/{id}` - Update case
+- `DELETE /api/v1/cases/{id}` - Delete case (soft delete)
+
+#### Feedback
+- `POST /api/v1/feedback` - Submit feedback
+- `GET /api/v1/feedback` - List feedback (admin only)
+
+## 🧪 Testing
+
+### Backend Tests
+
+The backend includes comprehensive test suites:
+
+```bash
+cd my-fastapi-backend
+
+# Test specific functionality
+python test_login.py
+python test_registration.py
+python test_api.py
+python test_complete_flow.py
+python test_password_change.py
+python test_user_management.py
+python test_feedback_chat.py
+
+# Test email functionality
+python test_email_sending.py
+python test_forgot_password.py
+python test_verification_flow.py
+
+# Test profile and persistence
+python test_profile_persistence.py
+python test_profile_update.py
+```
+
+### Frontend Tests
+
+Run ESLint to check for code quality:
+
+```bash
+cd frontend
+npm run lint
+```
+
+## 🗄️ Database Management
+
+### Database Migrations
+
+The project includes several migration scripts:
+
+```bash
+cd my-fastapi-backend
+
+# Add specific columns
+python add_missing_columns.py
+python add_username_column.py
+python migrate_timeline_columns.py
+
+# Migrate data
+python migrate_db.py
+python migrate_feedback_chat.py
+python migrate_id_system.py
+python migrate_user_fields.py
+
+# Fix data
+python fix_password_changed_field.py
+python fix_usernames.py
+```
+
+### Database Inspection
+
+```bash
+# Check database state
+python check_users.py
+python check_users_data.py
+python check_db_users.py
+python check_id_sync.py
+
+# Verify data
+python verify_sync.py
+```
+
+### Reset Admin Password
+
+```bash
+python reset_admin_password.py
+```
+
+### Setup Test Users
+
+```bash
+python setup_test_users.py
+```
+
+## 🚢 Deployment
+
+### Frontend Deployment (Vercel Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. Configure build settings:
+   - Build Command: `cd frontend && npm run build`
+   - Output Directory: `frontend/.next`
+   - Install Command: `cd frontend && npm install`
+3. Add environment variables if needed
+4. Deploy
+
+### Backend Deployment
+
+#### Using Docker (Recommended)
+
+Create a `Dockerfile` in `my-fastapi-backend`:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Build and run:
+```bash
+docker build -t dispatchums-backend .
+docker run -p 8000:8000 dispatchums-backend
+```
+
+#### Using a VPS
+
+1. Install Python 3.8+ on your server
+2. Clone the repository
+3. Install dependencies: `pip install -r requirements.txt`
+4. Set up environment variables
+5. Use a process manager like `systemd` or `supervisor`
+6. Configure nginx as a reverse proxy
+7. Set up SSL with Let's Encrypt
+
+### Database for Production
+
+For production, switch to PostgreSQL:
+
+1. Install PostgreSQL
+2. Create a database
+3. Update `DATABASE_URL` in `.env`:
+   ```
+   DATABASE_URL=postgresql://username:password@localhost/dispatchums
+   ```
+4. Run migrations
+
+## 👥 User Roles
+
+The system supports multiple user roles:
+
+- **Admin**: Full access to all features including user management, case configuration and unit creation.
+- **Responder**: Emergency response personnel with access to case management and field operations
+- **User**: Access to new case, profile management, feedback chatbox and email verification.
+
+## 🔒 Security Features
+
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based access control (RBAC)
+- CORS configuration
+- SQL injection prevention (SQLAlchemy ORM)
+- Environment variable protection
+
+## 🤝 Contributing
+
+This is an academic project for course KP44104. For questions or issues, please contact the project author.
