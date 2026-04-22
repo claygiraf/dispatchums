@@ -1,6 +1,6 @@
-# DISPATCHUMS MEDICAL PRIORITY DISPATCH SYSTEM
+# DISPATCHUMS
 
-A medical priority dispatch system that streamlines case management, resource allocation, determinant codes and emergency response coordination between dispatchers, admins and responders.
+Medical priority dispatch system streamlines medical case management, resource allocation, determinant codes and emergency response coordination between dispatchers, admins and responders.
 
 ## 📋 Table of Contents
 
@@ -24,22 +24,23 @@ DISPATCHUMS is a modern, full-stack medical priority dispatch system designed to
 
 ### Core Features
 - 🔐 **User Authentication & Authorization**: Secure JWT-based authentication with role-based access control (Admin/User)
-- 📊 **Dashboard**: Comprehensive overview with analytics and insights
+- 📊 **Dashboard**: Comprehensive overview with analytics & insights with charts and line bars
 - 🚨 **Case Management**: Create, update, track, and manage emergency cases
 - 🔍 **Diagnostic Tools**: Advanced diagnostic features for case analysis
 - 👤 **User Profile Management**: Profile updates and password management
 - 📝 **Feedback System**: Interactive chat-based feedback mechanism
 - 📧 **Email Notifications**: Automated email notifications for password recovery and verification
 - 📈 **Reporting & Analytics**: Visual analytics using charts and graphs
-- 🗑️ **Trash Management**: Soft delete functionality with restore capabilities
+- 🗑️ **Trash Management**: Delete functionality with restore capabilities
 
 ### Additional Features
 - Responsive design for mobile and desktop
 - Real-time data updates
-- PDF export functionality
+- Haversine Formula for shortest distance determination
+- PDF export & download functionality
 - Timeline tracking for cases
 - Work info management
-- Haversine Formula for shortest distance
+
 
 ## 🛠 Technology Stack
 
@@ -137,7 +138,7 @@ dispatchums
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following installed:
+Before begin, ensure the following installed:
 
 ### Required
 - **Node.js**: >= 18.0.0
@@ -151,7 +152,7 @@ Before you begin, ensure you have the following installed:
 
 ## 🚀 Installation
 
-### 1. Clone the Repository
+### 1. Clone Repository
 
 ```bash
 git clone <repository-url>
@@ -395,8 +396,8 @@ python setup_test_users.py
 The system supports multiple user roles:
 
 - **Admin**: Full access to all features including user management, case configuration and unit creation.
-- **Responder**: Emergency response personnel with access to case management and field operations
-- **User**: Access to new case, profile management, feedback chatbox and email verification.
+- **Responder**: Emergency response personnel with access to ambulance status management and feedback chatbox.
+- **Dispatcher**: Create new case, case entry, post dispatch instruction, ambulance dispatch and feedback chatbox.
 
 ## 🔒 Security Features
 
@@ -409,6 +410,6 @@ The system supports multiple user roles:
 
 ## 🤝 Contributing
 
-This is an academic project under MIT license.
+All Rights Reserved. Academic project under MIT license.
 
 
